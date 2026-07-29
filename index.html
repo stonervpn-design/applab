@@ -129,6 +129,26 @@
   .step h4{margin:8px 0 5px; font-size:16px}
   .step p{margin:0; color:var(--muted); font-size:14px}
   .note{margin-top:18px; font-size:13.5px; color:var(--muted); background:var(--panel2); border:1px solid var(--border); border-left:3px solid var(--accent); padding:13px 15px; border-radius:9px}
+
+  /* live serial console */
+  #console{padding-top:6px}
+  .console-card{margin-top:20px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+  .console-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:13px 15px; background:var(--panel2); border-bottom:1px solid var(--border)}
+  .console-bar .status{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:13px; color:var(--muted)}
+  .console-bar .dot{width:9px; height:9px; border-radius:50%; background:var(--faint); box-shadow:0 0 0 3px color-mix(in srgb,var(--faint) 20%, transparent); transition:background .2s, box-shadow .2s}
+  .console-bar.on .dot{background:var(--signal); box-shadow:0 0 0 3px color-mix(in srgb,var(--signal) 26%, transparent)}
+  .console-bar .spacer{flex:1 1 12px}
+  .console-bar label{font-family:var(--mono); font-size:12px; color:var(--faint); text-transform:uppercase; letter-spacing:.1em}
+  .console-bar select{font-family:var(--mono); font-size:13px; padding:8px 9px; border-radius:9px; border:1px solid var(--border); background:var(--panel); color:var(--ink)}
+  .console-bar select:disabled{opacity:.5}
+  .console-bar .btn{padding:9px 13px; font-size:13px}
+  .term{margin:0; font-family:var(--mono); font-size:12.5px; line-height:1.5; color:var(--screen-ink); background:var(--screen);
+    height:340px; max-height:52vh; overflow:auto; padding:14px 16px; white-space:pre-wrap; overflow-wrap:anywhere; tab-size:2; scrollbar-color:color-mix(in srgb,var(--screen-ink) 30%, transparent) transparent}
+  .term:empty::before{content:"Plug in your board over USB and hit Connect to see its live serial output here."; color:var(--screen-dim)}
+  .term::-webkit-scrollbar{width:10px; height:10px}
+  .term::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--screen-ink) 24%, transparent); border-radius:6px}
+  .term::-webkit-scrollbar-track{background:transparent}
+  .console-note{padding:12px 15px; font-size:13px; color:var(--muted); border-top:1px solid var(--border); background:var(--panel2)}
   .note b{color:var(--ink)}
 
   footer{border-top:1px solid var(--border); margin-top:20px; padding:30px 0 40px; color:var(--muted); font-size:13.5px}
@@ -167,6 +187,7 @@
     <nav>
       <a href="#catalog">Apps</a>
       <a href="#how">How it works</a>
+      <a href="#console">Console</a>
       <button class="iconbtn" id="theme" title="Toggle theme" aria-label="Toggle theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke-linecap="round"/></svg>
       </button>
@@ -228,6 +249,26 @@
       <div class="step"><div class="k">03</div><h4>Flash in the browser</h4><p>When it's ready, plug in over USB in Chrome or Edge and hit Flash — it installs straight to the device.</p></div>
     </div>
     <div class="note"><b>Why compile instead of drag-and-drop:</b> the Cardputer has no PSRAM, so apps can't be loaded at runtime — they're built <b>into</b> the firmware. A custom build is how you get exactly the set you picked.</div>
+  </section>
+
+  <section id="console">
+    <div class="sechead"><div class="eyebrow">Live serial</div><h2>Device console</h2>
+      <p>Watch your board's serial output live — boot messages, app output, and debug logs stream here while it's plugged in. Everything stays in your browser; nothing is uploaded.</p></div>
+    <div class="console-card">
+      <div class="console-bar" id="cbar">
+        <span class="status"><span class="dot"></span><span id="cstatus">Not connected</span></span>
+        <span class="spacer"></span>
+        <label for="cbaud">baud</label>
+        <select id="cbaud" aria-label="Baud rate">
+          <option>115200</option><option>230400</option><option>460800</option><option>921600</option><option>74880</option>
+        </select>
+        <button class="btn" id="cclear" title="Clear the log">Clear</button>
+        <button class="btn" id="csave" title="Download the log as a text file">Save</button>
+        <button class="btn primary" id="cconnect">Connect</button>
+      </div>
+      <pre class="term" id="cterm" aria-live="polite" aria-label="Device serial output"></pre>
+      <div class="console-note" id="cnote" hidden></div>
+    </div>
   </section>
 </div>
 
@@ -432,8 +473,10 @@ function buildReady(manifest, boardName, n){
   btn.innerHTML='<button slot="activate" class="btn primary">Flash now</button>'+
     '<span slot="unsupported" class="hint">Use Chrome / Edge on desktop to flash.</span>'+
     '<span slot="not-allowed" class="hint">Flashing needs a secure (https) page.</span>';
+  const logsBtn=document.createElement('button'); logsBtn.className='btn'; logsBtn.textContent='View device logs';
+  logsBtn.onclick=()=>{ closeModal(); if(window.openConsole) window.openConsole(); };
   const close=document.createElement('button'); close.className='btn'; close.textContent='Done'; close.onclick=closeModal;
-  const row=document.getElementById('flashrow'); row.appendChild(btn); row.appendChild(close);
+  const row=document.getElementById('flashrow'); row.appendChild(btn); row.appendChild(logsBtn); row.appendChild(close);
 }
 function buildError(msg, boardName){
   openModal(`<h3>Build didn't start</h3><div class="sub">${boardName}</div>
@@ -467,6 +510,81 @@ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
   setInterval(()=>{sel=(sel+1)%menu.length;drawScreen();},1400);
   let bt=88;setInterval(()=>{bt=bt<=72?89:bt-1;battEl.textContent=bt+'%';},4200);
 }
+
+/* ── live serial console (Web Serial API) ── */
+(function(){
+  const term=document.getElementById('cterm'), bar=document.getElementById('cbar');
+  const statusEl=document.getElementById('cstatus'), connectBtn=document.getElementById('cconnect');
+  const clearBtn=document.getElementById('cclear'), saveBtn=document.getElementById('csave');
+  const baudSel=document.getElementById('cbaud'), note=document.getElementById('cnote');
+
+  window.openConsole=()=>document.getElementById('console').scrollIntoView({behavior:'smooth'});
+
+  if(!('serial' in navigator)){
+    connectBtn.disabled=true; baudSel.disabled=true; note.hidden=false;
+    note.innerHTML='Live serial needs the <b>Web Serial API</b> — open this page in Chrome or Edge on desktop.';
+    return;
+  }
+
+  let port=null, reader=null, keepReading=false, buf='';
+  const MAX=400000; // cap retained text so long sessions stay responsive
+
+  function setConnected(on){
+    bar.classList.toggle('on',on);
+    statusEl.textContent=on?('Connected · '+baudSel.value+' baud'):'Not connected';
+    connectBtn.textContent=on?'Disconnect':'Connect';
+    connectBtn.classList.toggle('primary',!on);
+    baudSel.disabled=on;
+  }
+  function append(text){
+    buf+=text;
+    if(buf.length>MAX) buf=buf.slice(-MAX);
+    const atBottom=term.scrollHeight-term.scrollTop-term.clientHeight<40;
+    term.textContent=buf;
+    if(atBottom) term.scrollTop=term.scrollHeight;
+  }
+  async function readLoop(){
+    const dec=new TextDecoder();
+    while(keepReading && port && port.readable){
+      reader=port.readable.getReader();
+      try{
+        for(;;){ const {value,done}=await reader.read(); if(done) break; if(value) append(dec.decode(value,{stream:true})); }
+      }catch(e){ /* device unplugged / stream error — loop exits, disconnect handles UI */ }
+      finally{ try{ reader.releaseLock(); }catch(e){} }
+    }
+  }
+  async function connect(){
+    try{
+      port=await navigator.serial.requestPort();
+      await port.open({baudRate:parseInt(baudSel.value,10)});
+      keepReading=true; setConnected(true);
+      append((buf?'\n':'')+'— connected '+new Date().toLocaleTimeString()+' —\n');
+      port.addEventListener('disconnect',onLost);
+      await readLoop();
+      if(keepReading) onLost(); // read loop ended on its own (e.g. unplug)
+    }catch(e){
+      if(e && e.name!=='NotFoundError') append('[couldn\'t connect: '+e.message+']\n'); // NotFoundError = user dismissed picker
+    }
+  }
+  async function teardown(){
+    keepReading=false;
+    try{ if(reader) await reader.cancel(); }catch(e){}
+    try{ if(port) await port.close(); }catch(e){}
+    if(port){ try{ port.removeEventListener('disconnect',onLost); }catch(e){} }
+    port=null; reader=null; setConnected(false);
+  }
+  async function disconnect(){ await teardown(); append('— disconnected —\n'); }
+  function onLost(){ if(port){ teardown(); append('— device disconnected —\n'); } }
+
+  connectBtn.addEventListener('click',()=>{ port?disconnect():connect(); });
+  clearBtn.addEventListener('click',()=>{ buf=''; term.textContent=''; });
+  saveBtn.addEventListener('click',()=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([buf||''],{type:'text/plain'}));
+    a.download='applab-serial-log.txt'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  });
+})();
 </script>
 </body>
 </html>
