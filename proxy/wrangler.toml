@@ -1,0 +1,10 @@
+name = "applab-build-proxy"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Public values (safe to commit). The token is a SECRET — set it separately with
+#   wrangler secret put GH_TOKEN
+[vars]
+SOURCE_REPO    = "stonervpn-design/applab-firmware-src"
+BUILDS_PAGES   = "stonervpn-design.github.io/applab-builds"
+ALLOWED_ORIGIN = "https://stonervpn-design.github.io"
