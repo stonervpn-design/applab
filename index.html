@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>applab — apps for M5Stack StickS3 & Cardputer ADV</title>
+<title>applab — build & flash apps for M5Stack StickS3 & Cardputer ADV</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Browse and flash the apps built into the M5Stack StickS3 and Cardputer ADV Flipper-firmware ports. One-click web flashing.">
-<!-- Inline flashing (Web Serial). Loads on your own domain; a sandboxed preview can't run it. -->
+<meta name="description" content="Pick the apps you want, build a custom firmware, and flash it in your browser — for the M5Stack StickS3 and Cardputer ADV Flipper-firmware ports.">
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
 <style>
   :root{
@@ -18,44 +17,28 @@
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
   }
-  @media (prefers-color-scheme: light){
-    :root{
-      --bg:#E9ECEA; --panel:#FFFFFF; --panel2:#F3F6F4; --border:#D7DDD9;
-      --ink:#141C19; --muted:#586661; --faint:#8B968F;
-      --accent:#A55E00; --accent-2:#7E4A0A; --signal:#0E8C7E;
-      --shadow:0 1px 0 rgba(255,255,255,.6), 0 20px 44px -28px rgba(20,40,34,.5);
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#0B0F0E; --panel:#131A18; --panel2:#1A231F; --border:#26322E;
-    --ink:#E7EEEA; --muted:#93A19B; --faint:#6A776F;
-    --accent:#FFB020; --accent-2:#C9821A; --signal:#5AD1C4;
-    --shadow:0 1px 0 rgba(255,255,255,.03), 0 18px 40px -24px rgba(0,0,0,.8);
-  }
-  :root[data-theme="light"]{
+  @media (prefers-color-scheme: light){:root{
     --bg:#E9ECEA; --panel:#FFFFFF; --panel2:#F3F6F4; --border:#D7DDD9;
-    --ink:#141C19; --muted:#586661; --faint:#8B968F;
-    --accent:#A55E00; --accent-2:#7E4A0A; --signal:#0E8C7E;
-    --shadow:0 1px 0 rgba(255,255,255,.6), 0 20px 44px -28px rgba(20,40,34,.5);
-  }
+    --ink:#141C19; --muted:#586661; --faint:#8B968F; --accent:#A55E00; --accent-2:#7E4A0A; --signal:#0E8C7E;
+    --shadow:0 1px 0 rgba(255,255,255,.6), 0 20px 44px -28px rgba(20,40,34,.5);}}
+  :root[data-theme="dark"]{--bg:#0B0F0E;--panel:#131A18;--panel2:#1A231F;--border:#26322E;--ink:#E7EEEA;--muted:#93A19B;--faint:#6A776F;--accent:#FFB020;--accent-2:#C9821A;--signal:#5AD1C4;--shadow:0 1px 0 rgba(255,255,255,.03), 0 18px 40px -24px rgba(0,0,0,.8);}
+  :root[data-theme="light"]{--bg:#E9ECEA;--panel:#FFFFFF;--panel2:#F3F6F4;--border:#D7DDD9;--ink:#141C19;--muted:#586661;--faint:#8B968F;--accent:#A55E00;--accent-2:#7E4A0A;--signal:#0E8C7E;--shadow:0 1px 0 rgba(255,255,255,.6), 0 20px 44px -28px rgba(20,40,34,.5);}
   :root, :root[data-theme]{ --screen:#120C02; --screen-ink:#FFB020; --screen-dim:#8A5E12; }
 
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.55;
-    -webkit-font-smoothing:antialiased;
-    background-image:radial-gradient(circle at 12% -8%, color-mix(in srgb,var(--accent) 6%, transparent), transparent 42%);}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 12% -8%, color-mix(in srgb,var(--accent) 6%, transparent), transparent 42%); padding-bottom:80px}
   .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px}
   a{color:inherit}
   h1,h2,h3{text-wrap:balance; margin:0}
   .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); font-weight:600}
-  .muted{color:var(--muted)}
   .tnum{font-variant-numeric:tabular-nums}
+  .mono{font-family:var(--mono)}
 
-  header.bar{position:sticky; top:0; z-index:40; backdrop-filter:blur(10px);
-    background:color-mix(in srgb,var(--bg) 82%, transparent); border-bottom:1px solid var(--border)}
+  header.bar{position:sticky; top:0; z-index:40; backdrop-filter:blur(10px); background:color-mix(in srgb,var(--bg) 82%, transparent); border-bottom:1px solid var(--border)}
   .bar .wrap{display:flex; align-items:center; gap:18px; height:60px}
-  .brand{font-family:var(--mono); font-weight:700; font-size:18px; letter-spacing:-.01em; display:flex; align-items:center; gap:2px; color:var(--ink); text-decoration:none}
+  .brand{font-family:var(--mono); font-weight:700; font-size:18px; display:flex; align-items:center; gap:2px; color:var(--ink); text-decoration:none}
   .brand b{color:var(--accent)}
   .cursor{display:inline-block; width:9px; height:1.05em; background:var(--accent); margin-left:3px; translate:0 2px; animation:blink 1.1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
@@ -65,30 +48,27 @@
   .iconbtn{display:inline-grid; place-items:center; width:38px; height:38px; border:1px solid var(--border); border-radius:9px; background:var(--panel); color:var(--muted); cursor:pointer}
   .iconbtn:hover{color:var(--accent); border-color:var(--accent-2)}
 
-  .hero{padding:64px 0 40px}
+  .hero{padding:60px 0 34px}
   .hero .grid{display:grid; grid-template-columns:1.05fr .95fr; gap:48px; align-items:center}
-  .hero h1{font-size:clamp(34px,5vw,56px); line-height:1.02; letter-spacing:-.025em; font-weight:800; margin:16px 0 0}
+  .hero h1{font-size:clamp(34px,5vw,54px); line-height:1.03; letter-spacing:-.025em; font-weight:800; margin:16px 0 0}
   .hero h1 .amberword{color:var(--accent)}
-  .hero p.lede{font-size:clamp(16px,1.7vw,19px); color:var(--muted); max-width:46ch; margin:18px 0 0}
-  .cta-row{display:flex; flex-wrap:wrap; gap:12px; margin-top:28px}
-  .btn{font-family:var(--mono); font-size:14px; font-weight:600; text-decoration:none; cursor:pointer;
-    display:inline-flex; align-items:center; gap:9px; padding:12px 16px; border-radius:11px; border:1px solid var(--border); color:var(--ink); background:var(--panel)}
+  .hero p.lede{font-size:clamp(16px,1.7vw,19px); color:var(--muted); max-width:47ch; margin:18px 0 0}
+  .cta-row{display:flex; flex-wrap:wrap; gap:12px; margin-top:26px}
+  .btn{font-family:var(--mono); font-size:14px; font-weight:600; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:9px; padding:12px 16px; border-radius:11px; border:1px solid var(--border); color:var(--ink); background:var(--panel)}
   .btn:hover{border-color:var(--accent-2)}
   .btn.primary{background:var(--accent); color:#140c00; border-color:var(--accent); font-weight:700}
   .btn.primary:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
   .btn svg{width:16px;height:16px}
-  .hero .stats{display:flex; gap:26px; margin-top:30px; flex-wrap:wrap}
+  .hero .stats{display:flex; gap:26px; margin-top:28px; flex-wrap:wrap}
   .stat b{font-family:var(--mono); font-size:22px; display:block; letter-spacing:-.02em}
   .stat span{font-size:12.5px; color:var(--faint); text-transform:uppercase; letter-spacing:.1em}
 
   .device{justify-self:center; width:100%; max-width:420px}
   .bezel{background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:20px; box-shadow:var(--shadow)}
-  .screen{background:
-      repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px),
-      radial-gradient(120% 90% at 50% -10%, #1c1305, var(--screen));
-    color:var(--screen-ink); border-radius:9px; padding:16px 16px 14px; font-family:var(--mono);
-    border:1px solid #3a2a08; box-shadow:inset 0 0 34px rgba(255,176,32,.10), inset 0 0 0 1px rgba(255,176,32,.06);
-    height:262px; overflow:hidden; position:relative}
+  .screen{background:repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px), radial-gradient(120% 90% at 50% -10%, #1c1305, var(--screen));
+    color:var(--screen-ink); border-radius:9px; padding:16px 16px 14px; font-family:var(--mono); border:1px solid #3a2a08;
+    box-shadow:inset 0 0 34px rgba(255,176,32,.10), inset 0 0 0 1px rgba(255,176,32,.06); height:262px; overflow:hidden; position:relative}
   .screen .row{display:flex; justify-content:space-between; font-size:12px; color:var(--screen-dim); border-bottom:1px solid rgba(255,176,32,.18); padding-bottom:7px; margin-bottom:8px}
   .screen ul{list-style:none; margin:0; padding:0; font-size:15px}
   .screen li{padding:5px 8px; border-radius:5px; display:flex; align-items:center; gap:9px; opacity:.55}
@@ -100,26 +80,12 @@
   .dot{width:8px;height:8px;border-radius:50%;background:var(--signal); box-shadow:0 0 10px var(--signal); display:inline-block; animation:pulse 2s ease-in-out infinite}
   @keyframes pulse{50%{opacity:.4}}
 
-  section{padding:52px 0}
-  .sechead{display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:26px; flex-wrap:wrap}
+  section{padding:46px 0}
+  .sechead{margin-bottom:24px}
   .sechead h2{font-size:clamp(24px,3vw,32px); letter-spacing:-.02em}
-  .sechead p{color:var(--muted); margin:6px 0 0; max-width:52ch}
+  .sechead p{color:var(--muted); margin:6px 0 0; max-width:56ch}
 
-  .boards{display:grid; grid-template-columns:1fr 1fr; gap:20px}
-  .board{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:var(--shadow)}
-  .board .top{display:flex; align-items:center; justify-content:space-between; gap:12px}
-  .board h3{font-size:20px; letter-spacing:-.01em}
-  .board .tag{font-family:var(--mono); font-size:11px; color:var(--signal); border:1px solid color-mix(in srgb,var(--signal) 40%,var(--border)); padding:3px 8px; border-radius:20px; white-space:nowrap}
-  .specs{display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; font-size:13.5px; margin:2px 0}
-  .specs div{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--border); padding-bottom:6px}
-  .specs span:first-child{color:var(--faint)}
-  .specs span:last-child{font-family:var(--mono); color:var(--ink)}
-  .board .ver{font-family:var(--mono); font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px}
-  .board .flashrow{display:flex; gap:10px; margin-top:auto; flex-wrap:wrap; align-items:center}
-  esp-web-install-button{--esp-tools-button-color:transparent}
-  .ewt-note{font-family:var(--mono); font-size:12px; color:var(--faint); padding:10px 4px}
-
-  .controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:20px}
+  .controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:18px}
   .search{flex:1; min-width:220px; display:flex; align-items:center; gap:9px; background:var(--panel); border:1px solid var(--border); border-radius:11px; padding:10px 13px}
   .search input{border:0; outline:0; background:transparent; color:var(--ink); font-family:var(--mono); font-size:14px; width:100%}
   .search svg{width:16px;height:16px;color:var(--faint);flex:none}
@@ -129,20 +95,34 @@
   .chip[aria-pressed="true"]{color:#140c00; background:var(--accent); border-color:var(--accent); font-weight:700}
   .chip .n{font-size:11px; opacity:.7}
 
-  .grid-apps{display:grid; grid-template-columns:repeat(auto-fill,minmax(258px,1fr)); gap:14px}
-  .app{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:15px; display:flex; gap:13px; text-align:left; cursor:pointer; color:inherit; align-items:flex-start; transition:border-color .15s, transform .15s}
+  .grid-apps{display:grid; grid-template-columns:repeat(auto-fill,minmax(266px,1fr)); gap:14px}
+  .app{position:relative; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:15px 15px 15px; display:flex; gap:13px; align-items:flex-start; transition:border-color .15s, transform .15s, box-shadow .15s}
   .app:hover{border-color:var(--accent-2); transform:translateY(-2px)}
-  .app:focus-visible{outline:2px solid var(--signal); outline-offset:2px}
-  .ico{flex:none; width:46px; height:46px; border-radius:9px; display:grid; place-items:center; color:var(--screen-ink);
-    background:radial-gradient(120% 100% at 50% 0%, #1c1305, var(--screen)); border:1px solid #3a2a08;
-    box-shadow:inset 0 0 16px rgba(255,176,32,.10)}
+  .app.picked{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
+  .pick{position:absolute; top:11px; right:11px; width:24px; height:24px; border:1px solid var(--border); border-radius:7px; background:var(--panel2); color:transparent; display:grid; place-items:center; cursor:pointer; flex:none}
+  .pick:hover{border-color:var(--accent-2)}
+  .pick:focus-visible{outline:2px solid var(--signal); outline-offset:2px}
+  .app.picked .pick{background:var(--accent); border-color:var(--accent); color:#140c00}
+  .pick svg{width:15px;height:15px}
+  .ico{flex:none; width:46px; height:46px; border-radius:9px; display:grid; place-items:center; color:var(--screen-ink); background:radial-gradient(120% 100% at 50% 0%, #1c1305, var(--screen)); border:1px solid #3a2a08; box-shadow:inset 0 0 16px rgba(255,176,32,.10)}
   .ico svg{width:24px;height:24px}
-  .app .meta{min-width:0}
-  .app .nm{font-weight:650; font-size:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .app .body{min-width:0; cursor:pointer; padding-right:26px}
+  .app .nm{font-weight:650; font-size:15px}
   .app .desc{color:var(--muted); font-size:13px; margin-top:3px; line-height:1.4}
   .app .cat{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
   .badge{font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:5px; border:1px solid var(--border); color:var(--muted)}
   .empty{grid-column:1/-1; text-align:center; color:var(--muted); font-family:var(--mono); padding:40px}
+
+  /* build tray */
+  .tray{position:fixed; left:0; right:0; bottom:0; z-index:50; background:color-mix(in srgb,var(--bg) 90%, transparent); backdrop-filter:blur(12px); border-top:1px solid var(--border); transform:translateY(110%); transition:transform .25s ease}
+  .tray.show{transform:none}
+  .tray .wrap{display:flex; align-items:center; gap:14px; height:66px; flex-wrap:wrap}
+  .tray .cnt{font-family:var(--mono); font-size:14px}
+  .tray .cnt b{color:var(--accent); font-size:18px}
+  .tray select{font-family:var(--mono); font-size:13px; background:var(--panel); color:var(--ink); border:1px solid var(--border); border-radius:9px; padding:9px 11px; cursor:pointer}
+  .tray .spacer{margin-left:auto}
+  .linkbtn{background:none; border:0; color:var(--muted); font-family:var(--mono); font-size:13px; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+  .linkbtn:hover{color:var(--ink)}
 
   .how{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:26px; display:grid; grid-template-columns:repeat(3,1fr); gap:22px; box-shadow:var(--shadow)}
   .step .k{font-family:var(--mono); color:var(--accent); font-size:13px; font-weight:700}
@@ -151,30 +131,30 @@
   .note{margin-top:18px; font-size:13.5px; color:var(--muted); background:var(--panel2); border:1px solid var(--border); border-left:3px solid var(--accent); padding:13px 15px; border-radius:9px}
   .note b{color:var(--ink)}
 
-  footer{border-top:1px solid var(--border); margin-top:30px; padding:30px 0 50px; color:var(--muted); font-size:13.5px}
+  footer{border-top:1px solid var(--border); margin-top:20px; padding:30px 0 40px; color:var(--muted); font-size:13.5px}
   footer .wrap{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap; align-items:center}
   footer a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--border)}
-  footer a:hover{border-color:var(--accent)}
-  .disc{max-width:60ch; line-height:1.5}
-  .mono{font-family:var(--mono)}
 
-  .modal{position:fixed; inset:0; z-index:60; display:none; place-items:center; padding:22px;
-    background:color-mix(in srgb,#000 55%, transparent); backdrop-filter:blur(3px)}
+  .modal{position:fixed; inset:0; z-index:70; display:none; place-items:center; padding:22px; background:color-mix(in srgb,#000 55%, transparent); backdrop-filter:blur(3px)}
   .modal.open{display:grid}
-  .sheet{background:var(--panel); border:1px solid var(--border); border-radius:16px; max-width:460px; width:100%; padding:24px; box-shadow:var(--shadow)}
-  .sheet .mh{display:flex; gap:14px; align-items:flex-start}
-  .sheet h3{font-size:20px}
-  .sheet .desc2{color:var(--muted); margin:14px 0 0; font-size:14.5px; line-height:1.55}
-  .sheet .kv{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
-  .sheet .close{margin-left:auto}
-  .sheet .foot{margin-top:20px; font-size:13px; color:var(--faint); font-family:var(--mono)}
+  .sheet{background:var(--panel); border:1px solid var(--border); border-radius:16px; max-width:480px; width:100%; padding:26px; box-shadow:var(--shadow)}
+  .sheet h3{font-size:20px; margin:0 0 4px}
+  .sheet .sub{color:var(--muted); font-size:13.5px; font-family:var(--mono)}
+  .prog{display:flex; align-items:center; gap:14px; margin:22px 0 6px}
+  .spin{width:26px;height:26px;border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .prog .ptxt b{display:block; font-size:15px}
+  .prog .ptxt span{color:var(--muted); font-size:13px; font-family:var(--mono)}
+  .mrow{display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; align-items:center}
+  .err{color:#ff8f6b; font-size:13.5px; margin-top:14px; font-family:var(--mono); word-break:break-word}
+  .hint{color:var(--faint); font-size:12.5px; margin-top:14px; line-height:1.5}
 
   @media (max-width:860px){
     .hero .grid{grid-template-columns:1fr; gap:34px}
     .device{grid-row:1; max-width:360px}
-    .boards{grid-template-columns:1fr}
     .how{grid-template-columns:1fr; gap:16px}
-    .hero{padding:40px 0 20px}
+    .hero{padding:36px 0 18px}
+    .tray .wrap{height:auto; padding-top:12px; padding-bottom:12px}
   }
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; scroll-behavior:auto} }
 </style>
@@ -185,7 +165,6 @@
   <div class="wrap">
     <a class="brand" href="#top">app<b>lab</b><span class="cursor" aria-hidden="true"></span></a>
     <nav>
-      <a href="#boards">Devices</a>
       <a href="#catalog">Apps</a>
       <a href="#how">How it works</a>
       <button class="iconbtn" id="theme" title="Toggle theme" aria-label="Toggle theme">
@@ -201,19 +180,18 @@
     <div class="grid">
       <div>
         <div class="eyebrow">Flipper-firmware ports · ESP32-S3</div>
-        <h1>Every tool your handheld can run — <span class="amberword">flash it from your browser.</span></h1>
-        <p class="lede">A browsable catalog of the apps baked into the M5Stack StickS3 and Cardputer ADV firmware. Sub-GHz, NFC, RFID, infrared, BadUSB, GPIO, games — plug in, pick your board, flash. No app, no driver.</p>
+        <h1>Pick the apps you want. <span class="amberword">We build the firmware.</span></h1>
+        <p class="lede">Tick the tools you need, choose your board, and we compile a custom firmware with exactly those — then you flash it in the browser. Sub-GHz, NFC, RFID, infrared, BadUSB, GPIO, games, and more.</p>
         <div class="cta-row">
-          <a class="btn primary" href="#boards">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Flash a device
+          <a class="btn primary" href="#catalog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 11l3 3 8-8M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Choose apps
           </a>
-          <a class="btn" href="#catalog">Browse apps</a>
         </div>
         <div class="stats">
-          <div class="stat"><b class="tnum" id="count-apps">39</b><span>apps included</span></div>
+          <div class="stat"><b class="tnum" id="count-apps">39</b><span>apps to choose from</span></div>
           <div class="stat"><b class="tnum">2</b><span>boards supported</span></div>
-          <div class="stat"><b class="tnum">1‑click</b><span>web flashing</span></div>
+          <div class="stat"><b class="tnum">~7 min</b><span>build &amp; flash</span></div>
         </div>
       </div>
       <div class="device">
@@ -223,23 +201,15 @@
             <ul id="scr-list"></ul>
             <div class="cap"><span>◄ back</span><span id="scr-hint">ok ►</span></div>
           </div>
-          <div class="chin"><span>M5 · ESP32-S3</span><span><span class="dot"></span> live catalog</span></div>
+          <div class="chin"><span>M5 · ESP32-S3</span><span><span class="dot"></span> your build, your apps</span></div>
         </div>
       </div>
     </div>
   </section>
-</div>
-
-<div class="wrap">
-  <section id="boards">
-    <div class="sechead"><div><div class="eyebrow">Step 1</div><h2>Plug in &amp; flash</h2>
-      <p>Connect the board over USB in Chrome or Edge on desktop, then hit Flash — it writes right here in the browser.</p></div></div>
-    <div class="boards" id="boards-grid"></div>
-  </section>
 
   <section id="catalog">
-    <div class="sechead"><div><div class="eyebrow">What's inside</div><h2>The app catalog</h2>
-      <p>These ship inside the firmware — flashing a board installs the whole set. Search or filter to see what each device can do.</p></div></div>
+    <div class="sechead"><div class="eyebrow">Choose your apps</div><h2>The app catalog</h2>
+      <p>Tick the tools you want. Pick a board and hit build — you'll get a firmware with exactly your selection, ready to flash.</p></div>
     <div class="controls">
       <label class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
@@ -251,19 +221,19 @@
   </section>
 
   <section id="how">
-    <div class="sechead"><div><div class="eyebrow">The honest bit</div><h2>How installing works</h2></div></div>
+    <div class="sechead"><div class="eyebrow">How it works</div><h2>Select → build → flash</h2></div>
     <div class="how">
-      <div class="step"><div class="k">01</div><h4>Plug in over USB</h4><p>Connect the StickS3 or Cardputer with a data USB-C cable. Use Chrome or Edge on desktop — they speak Web Serial. (Safari and phones can't flash.)</p></div>
-      <div class="step"><div class="k">02</div><h4>Flash in the browser</h4><p>Hit <b>Flash</b> on your board, pick the serial port, and it installs the firmware straight to the device — every app in the catalog comes with it.</p></div>
-      <div class="step"><div class="k">03</div><h4>Open apps on the device</h4><p>Reboot into the menu and launch any tool. Your captures and dumps live on the device storage.</p></div>
+      <div class="step"><div class="k">01</div><h4>Pick your apps</h4><p>Tick the tools you want and choose StickS3 or Cardputer. Your selection only <b>narrows</b> the safe set — nothing you shouldn't have gets added.</p></div>
+      <div class="step"><div class="k">02</div><h4>We compile it</h4><p>A build runs in the cloud and produces a firmware with exactly your apps (~5–12 min). No account needed.</p></div>
+      <div class="step"><div class="k">03</div><h4>Flash in the browser</h4><p>When it's ready, plug in over USB in Chrome or Edge and hit Flash — it installs straight to the device.</p></div>
     </div>
-    <div class="note"><b>Why bundles, not one-app-at-a-time:</b> the Cardputer has no PSRAM, so it can't load apps at runtime — the apps are compiled <b>into</b> the firmware. One flash gets you the whole set.</div>
+    <div class="note"><b>Why compile instead of drag-and-drop:</b> the Cardputer has no PSRAM, so apps can't be loaded at runtime — they're built <b>into</b> the firmware. A custom build is how you get exactly the set you picked.</div>
   </section>
 </div>
 
 <footer>
   <div class="wrap">
-    <div class="disc"><strong>applab</strong> — community Flipper-firmware ports for M5Stack ESP32-S3 boards. Not affiliated with Flipper Devices or M5Stack. Built for authorized security testing, education, and tinkering on hardware you own. You are responsible for lawful use.</div>
+    <div style="max-width:60ch; line-height:1.5"><strong>applab</strong> — community Flipper-firmware ports for M5Stack ESP32-S3 boards. Not affiliated with Flipper Devices or M5Stack. For authorized security testing, education, and hardware you own.</div>
     <div class="mono" style="text-align:right; line-height:1.9">
       <a href="https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/" target="_blank" rel="noopener">StickS3 flasher ↗</a><br>
       <a href="https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/" target="_blank" rel="noopener">Cardputer flasher ↗</a>
@@ -271,22 +241,36 @@
   </div>
 </footer>
 
-<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
-  <div class="sheet">
-    <div class="mh">
-      <div class="ico" id="m-ico"></div>
-      <div><h3 id="m-title">App</h3><div class="mono" id="m-cat" style="font-size:12px;color:var(--faint);margin-top:3px"></div></div>
-      <button class="iconbtn close" id="m-close" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <p class="desc2" id="m-desc"></p>
-    <div class="kv" id="m-kv"></div>
-    <div class="foot" id="m-foot"></div>
+<!-- build tray -->
+<div class="tray" id="tray">
+  <div class="wrap">
+    <span class="cnt"><b id="sel-n">0</b> apps selected</span>
+    <select id="build-board" aria-label="Board">
+      <option value="m5stack_cardputer_adv">Cardputer ADV</option>
+      <option value="m5stick_s3">M5Stick S3</option>
+    </select>
+    <button class="linkbtn" id="sel-clear">clear</button>
+    <span class="spacer"></span>
+    <button class="btn primary" id="do-build">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M13 2L4.5 13H12l-1 9 8.5-11H12l1-9z" stroke-linejoin="round"/></svg>
+      Build my firmware
+    </button>
   </div>
 </div>
 
+<!-- build modal -->
+<div class="modal" id="buildmodal" role="dialog" aria-modal="true">
+  <div class="sheet" id="buildsheet"></div>
+</div>
+
 <script>
+/* ─────────────────────────────────────────────────────────────────────────────
+   CONFIG — paste your Cloudflare Worker URL here after `wrangler deploy`.
+   Until then the Build button explains that the service isn't wired up yet.
+   ───────────────────────────────────────────────────────────────────────────── */
+const PROXY_URL = "PASTE_YOUR_WORKER_URL_HERE";   // e.g. https://applab-build-proxy.xxx.workers.dev
+const BUILD_TIMEOUT_MS = 15 * 60 * 1000;
+
 const I = {
   subghz:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12c1.5-5 3.5-5 4.5 0S10 17 11 12s2.5-5 3.5 0 2.5 5 3.5 0" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   nfc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M8 9.5c2 .6 2 4.4 0 5M11 8c3 1 3 7 0 8" stroke-linecap="round"/></svg>',
@@ -308,113 +292,159 @@ const CATS = [
   {id:'games', label:'Games'}, {id:'tools', label:'Tools & Media'}, {id:'detect', label:'Defense'}
 ];
 const CATMAP = Object.fromEntries(CATS.map(c=>[c.id,c.label]));
+// id = firmware appid (what the build receives); n = display name
 const APPS = [
-  {n:'Sub-GHz', c:'subghz', d:'Capture, analyze and replay 300–928 MHz remotes; read/save/emulate signals with the CC1101.', b:'both'},
-  {n:'Sub-GHz Remote', c:'subghz', d:'Bind saved signals to a button grid and fire them like a universal remote.', b:'both'},
-  {n:'Enhanced Sub-GHz Chat', c:'subghz', d:'Text chat between devices over the sub-GHz radio, with optional encryption.', b:'both'},
-  {n:'LoRa Monitor', c:'subghz', d:'Watch LoRa traffic and packet metadata on the ISM bands.', b:'both'},
-  {n:'Meshtastic Sniffer', c:'subghz', d:'Passively observe Meshtastic mesh packets in range.', b:'both'},
-  {n:'NFC', c:'nfc', d:'Read, save and emulate 13.56 MHz cards. 40 supported-card parsers (Clipper, Troika, Opal…) and full EMV bank-card decode with transaction history.', b:'both'},
-  {n:'NFC Magic', c:'nfc', d:'Detect and write magic cards — Gen1a, Gen2, Gen4 — to clone a saved dump.', b:'both'},
-  {n:'Mifare Fuzzer', c:'nfc', d:'Cycle UIDs and payloads against a reader for MIFARE testing.', b:'both'},
-  {n:'125 kHz RFID', c:'rfid', d:'Read, save and emulate low-frequency tags — EM4100, HID Prox, Indala and more.', b:'both'},
-  {n:'Wiegand Reader', c:'rfid', d:'Decode raw Wiegand from an access-control reader over GPIO.', b:'both'},
-  {n:'Infrared', c:'ir', d:'Learn and replay IR remotes; built-in universal database for TVs, ACs and projectors.', b:'both'},
-  {n:'XRemote', c:'ir', d:'Custom IR remote layouts you build and share.', b:'both'},
-  {n:'iButton', c:'ibutton', d:'Read, save and emulate 1-Wire Dallas keys — DS1990 and clones.', b:'both'},
-  {n:'Bluetooth', c:'bt', d:'BLE scanning and HID tools over the on-board radio (NimBLE stack).', b:'both'},
-  {n:'WiFi', c:'wifi', d:'Scan networks, run recon and the usual 2.4 GHz Wi-Fi assessment tools.', b:'both'},
-  {n:'ESP-Now', c:'wifi', d:'Connectionless ESP-Now messaging and traffic experiments.', b:'both'},
-  {n:'NRF 2.4 GHz', c:'wifi', d:'Sniff and interact with nRF24 devices and 2.4 GHz protocols.', b:'both'},
-  {n:'nRF24 Jammer', c:'wifi', d:'Wideband 2.4 GHz noise for range testing on gear you own.', b:'both'},
-  {n:'LAN Attack', c:'wifi', d:'Network-layer probes and assessment over Wi-Fi.', b:'both'},
-  {n:'Bad USB', c:'usb', d:'Run scripted keystroke payloads (DuckyScript-style) as a USB HID.', b:'both'},
-  {n:'U2F', c:'usb', d:'Use the device as a FIDO/U2F hardware security key.', b:'both'},
-  {n:'GPIO', c:'gpio', d:'Drive and read the header pins; toggle 3V3, PWM and logic levels.', b:'both'},
-  {n:'Pin Config', c:'gpio', d:'Map and label the exposed GPIO for your wiring.', b:'both'},
-  {n:'Grove I2C Scan', c:'gpio', d:'Scan the Grove/QWIIC bus and list every I2C address that answers.', b:'both'},
-  {n:'Bus Tools', c:'gpio', d:'Poke I2C and UART peripherals interactively.', b:'both'},
-  {n:'Power Monitor', c:'gpio', d:'Live voltage and current readout from the PMIC.', b:'both'},
-  {n:'Doom', c:'games', d:'The 1993 shooter, running on your handheld.', b:'both'},
-  {n:'Wolf3D', c:'games', d:'Wolfenstein 3D — full engine port.', b:'both'},
-  {n:'Asteroids', c:'games', d:'Vector arcade classic.', b:'both'},
-  {n:'Blackjack', c:'games', d:'Pocket 21, with split hands.', b:'both'},
-  {n:'Pong', c:'games', d:'The original two-paddle duel.', b:'both'},
-  {n:'Game 15', c:'games', d:'Slide-tile number puzzle.', b:'both'},
-  {n:'Dice D&D', c:'games', d:'Roll any polyhedral set for tabletop night.', b:'both'},
-  {n:'Flippergotchi', c:'games', d:'A virtual pet that levels up as you use the device.', b:'both'},
-  {n:'MP3 Player', c:'tools', d:'Play audio off the device storage.', b:'both'},
-  {n:'Clock', c:'tools', d:'Time, date and a stopwatch.', b:'both'},
-  {n:'QR Code', c:'tools', d:'Render any text or URL as a scannable QR on-screen.', b:'both'},
-  {n:'PocketLab', c:'tools', d:'A grab-bag of sensor readouts and small utilities.', b:'both'},
-  {n:'Archive', c:'tools', d:'Browse, rename and manage every saved dump and signal.', b:'both'},
-  {n:'Defender', c:'detect', d:'Passive detector that flags nearby Wi-Fi, BLE, sub-GHz, nRF24 and drone RF activity — defensive, receive-only.', b:'both'}
-];
-const BOARDS = [
-  {id:'stick', name:'M5Stack StickS3', tag:'has PSRAM',
-   specs:[['SoC','ESP32-S3'],['RAM','8 MB PSRAM'],['Display','1.9″ amber'],['Radios','Wi-Fi · BLE · CC1101 · nRF24'],['NFC','ST25R3916 / PN532'],['Storage','on-flash /ext']],
-   ver:'public-2026-07-29a', manifest:'https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/manifest.json',
-   url:'https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/'},
-  {id:'cardputer', name:'M5Stack Cardputer ADV', tag:'QWERTY',
-   specs:[['SoC','ESP32-S3'],['RAM','no PSRAM'],['Display','1.14″ amber'],['Input','56-key keyboard'],['Radios','Wi-Fi · BLE · Grove RF'],['Storage','microSD']],
-   ver:'cardputer-2026-07-29b', manifest:'https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/manifest.json',
-   url:'https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/'}
+  {id:'subghz', n:'Sub-GHz', c:'subghz', d:'Capture, analyze and replay 300–928 MHz remotes with the CC1101.'},
+  {id:'subghz_remote', n:'Sub-GHz Remote', c:'subghz', d:'Bind saved signals to a button grid and fire them like a universal remote.'},
+  {id:'esubghz_chat', n:'Enhanced Sub-GHz Chat', c:'subghz', d:'Text chat between devices over the sub-GHz radio, with optional encryption.'},
+  {id:'lora_monitor', n:'LoRa Monitor', c:'subghz', d:'Watch LoRa traffic and packet metadata on the ISM bands.'},
+  {id:'meshtastic_sniffer', n:'Meshtastic Sniffer', c:'subghz', d:'Passively observe Meshtastic mesh packets in range.'},
+  {id:'nfc', n:'NFC', c:'nfc', d:'Read, save and emulate 13.56 MHz cards. 40 card parsers and full EMV decode with transaction history.'},
+  {id:'nfc_magic', n:'NFC Magic', c:'nfc', d:'Detect and write magic cards — Gen1a, Gen2, Gen4 — to clone a saved dump.'},
+  {id:'mifare_fuzzer', n:'Mifare Fuzzer', c:'nfc', d:'Cycle UIDs and payloads against a reader for MIFARE testing.'},
+  {id:'lfrfid', n:'125 kHz RFID', c:'rfid', d:'Read, save and emulate low-frequency tags — EM4100, HID Prox, Indala and more.'},
+  {id:'wiegand', n:'Wiegand Reader', c:'rfid', d:'Decode raw Wiegand from an access-control reader over GPIO.'},
+  {id:'infrared', n:'Infrared', c:'ir', d:'Learn and replay IR remotes; built-in universal database for TVs, ACs and projectors.'},
+  {id:'flipper_xremote', n:'XRemote', c:'ir', d:'Custom IR remote layouts you build and share.'},
+  {id:'ibutton', n:'iButton', c:'ibutton', d:'Read, save and emulate 1-Wire Dallas keys — DS1990 and clones.'},
+  {id:'ble_spam', n:'Bluetooth', c:'bt', d:'BLE tools over the on-board radio (NimBLE stack).'},
+  {id:'wlan', n:'WiFi', c:'wifi', d:'Scan networks, run recon and the usual 2.4 GHz Wi-Fi assessment tools.'},
+  {id:'esp_now', n:'ESP-Now', c:'wifi', d:'Connectionless ESP-Now messaging and traffic experiments.'},
+  {id:'nrf24', n:'NRF 2.4 GHz', c:'wifi', d:'Sniff and interact with nRF24 devices and 2.4 GHz protocols.'},
+  {id:'fz_nrf24_jammer', n:'nRF24 Jammer', c:'wifi', d:'Wideband 2.4 GHz noise for range testing on gear you own.'},
+  {id:'lan_attack', n:'LAN Attack', c:'wifi', d:'Network-layer probes and assessment over Wi-Fi.'},
+  {id:'bad_usb', n:'Bad USB', c:'usb', d:'Run scripted keystroke payloads (DuckyScript-style) as a USB HID.'},
+  {id:'u2f', n:'U2F', c:'usb', d:'Use the device as a FIDO/U2F hardware security key.'},
+  {id:'gpio', n:'GPIO', c:'gpio', d:'Drive and read the header pins; toggle 3V3, PWM and logic levels.'},
+  {id:'pin_config', n:'Pin Config', c:'gpio', d:'Map and label the exposed GPIO for your wiring.'},
+  {id:'grove_i2c_scan', n:'Grove I2C Scan', c:'gpio', d:'Scan the Grove/QWIIC bus and list every I2C address that answers.'},
+  {id:'bus_tools', n:'Bus Tools', c:'gpio', d:'Poke I2C and UART peripherals interactively.'},
+  {id:'power_monitor', n:'Power Monitor', c:'gpio', d:'Live voltage and current readout from the PMIC.'},
+  {id:'doom', n:'Doom', c:'games', d:'The 1993 shooter, running on your handheld.'},
+  {id:'wolf3d', n:'Wolf3D', c:'games', d:'Wolfenstein 3D — full engine port.'},
+  {id:'asteroids', n:'Asteroids', c:'games', d:'Vector arcade classic.'},
+  {id:'blackjack', n:'Blackjack', c:'games', d:'Pocket 21, with split hands.'},
+  {id:'flipper_pong', n:'Pong', c:'games', d:'The original two-paddle duel.'},
+  {id:'game15', n:'Game 15', c:'games', d:'Slide-tile number puzzle.'},
+  {id:'dice_app', n:'Dice D&D', c:'games', d:'Roll any polyhedral set for tabletop night.'},
+  {id:'flippergotchi', n:'Flippergotchi', c:'games', d:'A virtual pet that levels up as you use the device.'},
+  {id:'mp3_player', n:'MP3 Player', c:'tools', d:'Play audio off the device storage.'},
+  {id:'clock', n:'Clock', c:'tools', d:'Time, date and a stopwatch.'},
+  {id:'qrcode', n:'QR Code', c:'tools', d:'Render any text or URL as a scannable QR on-screen.'},
+  {id:'pocketlab', n:'PocketLab', c:'tools', d:'A grab-bag of sensor readouts and small utilities.'},
+  {id:'archive', n:'Archive', c:'tools', d:'Browse, rename and manage every saved dump and signal.'},
+  {id:'defender', n:'Defender', c:'detect', d:'Passive detector flagging nearby Wi-Fi, BLE, sub-GHz, nRF24 and drone RF — receive-only.'}
 ];
 
-const flashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-document.getElementById('boards-grid').innerHTML = BOARDS.map(b=>`
-  <article class="board">
-    <div class="top"><h3>${b.name}</h3><span class="tag">${b.tag}</span></div>
-    <div class="specs">${b.specs.map(s=>`<div><span>${s[0]}</span><span>${s[1]}</span></div>`).join('')}</div>
-    <div class="ver"><span class="dot"></span> firmware <b class="tnum">${b.ver}</b></div>
-    <div class="flashrow">
-      <esp-web-install-button manifest="${b.manifest}">
-        <button slot="activate" class="btn primary">${flashSvg} Flash ${b.id==='stick'?'StickS3':'Cardputer'}</button>
-        <span slot="unsupported" class="ewt-note">Use Chrome / Edge on desktop</span>
-        <span slot="not-allowed" class="ewt-note">Needs HTTPS</span>
-      </esp-web-install-button>
-      <a class="btn" href="${b.url}" target="_blank" rel="noopener">Full flasher ↗</a>
-    </div>
-  </article>`).join('');
-
+const selected = new Set();
 let active='all', query='';
 const appsEl=document.getElementById('apps'), chipsEl=document.getElementById('chips');
 document.getElementById('count-apps').textContent=APPS.length;
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12.5l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const byId=Object.fromEntries(APPS.map(a=>[a.id,a]));
+
 function counts(){const m={};APPS.forEach(a=>m[a.c]=(m[a.c]||0)+1);return m;}
 function renderChips(){
   const cn=counts();
   chipsEl.innerHTML=`<button class="chip" data-cat="all" aria-pressed="${active==='all'}">All <span class="n tnum">${APPS.length}</span></button>`+
     CATS.filter(c=>cn[c.id]).map(c=>`<button class="chip" data-cat="${c.id}" aria-pressed="${active===c.id}">${c.label} <span class="n tnum">${cn[c.id]}</span></button>`).join('');
 }
-function boardBadge(b){return b==='stick'?'<span class="badge">StickS3 only</span>':b==='cardputer'?'<span class="badge">Cardputer only</span>':'<span class="badge">both boards</span>';}
 function renderApps(){
   const q=query.trim().toLowerCase();
   const list=APPS.filter(a=>(active==='all'||a.c===active)&&(!q||(a.n+' '+a.d+' '+CATMAP[a.c]).toLowerCase().includes(q)));
   appsEl.innerHTML=list.length?list.map(a=>`
-    <button class="app" data-i="${APPS.indexOf(a)}">
+    <div class="app ${selected.has(a.id)?'picked':''}" data-id="${a.id}">
+      <button class="pick" data-pick="${a.id}" aria-pressed="${selected.has(a.id)}" aria-label="Select ${a.n}">${CHECK}</button>
       <span class="ico">${I[a.c]}</span>
-      <span class="meta"><span class="nm">${a.n}</span><span class="desc">${a.d}</span><span class="cat">${CATMAP[a.c]} ${boardBadge(a.b)}</span></span>
-    </button>`).join(''):`<div class="empty">No apps match “${q}”. Try “nfc”, “radio” or “game”.</div>`;
+      <div class="body" data-toggle="${a.id}">
+        <div class="nm">${a.n}</div><div class="desc">${a.d}</div>
+        <div class="cat">${CATMAP[a.c]}</div>
+      </div>
+    </div>`).join(''):`<div class="empty">No apps match “${q}”. Try “nfc”, “radio” or “game”.</div>`;
 }
+function toggle(id){ selected.has(id)?selected.delete(id):selected.add(id); syncTray(); renderApps(); }
+appsEl.addEventListener('click',e=>{
+  const p=e.target.closest('[data-pick]'); const b=e.target.closest('[data-toggle]');
+  if(p) toggle(p.dataset.pick); else if(b) toggle(b.dataset.toggle);
+});
 chipsEl.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;active=b.dataset.cat;renderChips();renderApps();});
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value;renderApps();});
 
-const modal=document.getElementById('modal');
-function openApp(i){
-  const a=APPS[i];
-  document.getElementById('m-ico').innerHTML=I[a.c];
-  document.getElementById('m-title').textContent=a.n;
-  document.getElementById('m-cat').textContent=CATMAP[a.c].toUpperCase();
-  document.getElementById('m-desc').textContent=a.d;
-  document.getElementById('m-kv').innerHTML=boardBadge(a.b)+' <span class="badge">included in firmware</span>';
-  document.getElementById('m-foot').textContent='Install: flash your board — this app ships with it.';
-  modal.classList.add('open');
+/* ── build tray ── */
+const tray=document.getElementById('tray'), selN=document.getElementById('sel-n');
+function syncTray(){ selN.textContent=selected.size; tray.classList.toggle('show', selected.size>0); }
+document.getElementById('sel-clear').addEventListener('click',()=>{selected.clear();syncTray();renderApps();});
+
+/* ── build flow ── */
+const modal=document.getElementById('buildmodal'), sheet=document.getElementById('buildsheet');
+function openModal(html){ sheet.innerHTML=html; modal.classList.add('open'); }
+function closeModal(){ modal.classList.remove('open'); }
+modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+document.getElementById('do-build').addEventListener('click', startBuild);
+
+async function startBuild(){
+  const board=document.getElementById('build-board').value;
+  const apps=[...selected];
+  if(!apps.length) return;
+  const boardName = board==='m5stick_s3' ? 'M5Stick S3' : 'Cardputer ADV';
+
+  if(PROXY_URL.startsWith('PASTE_')){
+    openModal(`<h3>Almost there</h3><div class="sub">Build service not connected yet</div>
+      <p class="hint">The build endpoint isn't wired up. Deploy the Cloudflare Worker in <code>proxy/</code>,
+      then set <code>PROXY_URL</code> in this page to your Worker URL. Until then you can still flash the
+      full stock firmware from the board flashers linked in the footer.</p>
+      <div class="mrow"><button class="btn" id="mx">Close</button></div>`);
+    document.getElementById('mx').onclick=closeModal; return;
+  }
+
+  openModal(`<h3>Building your firmware</h3><div class="sub">${boardName} · ${apps.length} apps</div>
+    <div class="prog"><div class="spin"></div><div class="ptxt"><b id="pstate">Starting the build…</b><span id="pelapsed">0:00 elapsed</span></div></div>
+    <p class="hint">This compiles in the cloud and usually takes 5–12 minutes. Keep this tab open.</p>`);
+  const t0=Date.now();
+  const tick=setInterval(()=>{ const s=Math.floor((Date.now()-t0)/1000); const el=document.getElementById('pelapsed'); if(el) el.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} elapsed`; },1000);
+
+  let manifest;
+  try{
+    const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({board,apps:apps.join(',')})});
+    const j=await r.json();
+    if(!j.ok) throw new Error(j.error||('build request failed ('+r.status+')'));
+    manifest=j.manifest;
+  }catch(err){ clearInterval(tick); return buildError(err.message, boardName); }
+
+  const setState=t=>{ const el=document.getElementById('pstate'); if(el) el.textContent=t; };
+  setState('Compiling — grab a coffee…');
+  const deadline=Date.now()+BUILD_TIMEOUT_MS;
+  while(Date.now()<deadline){
+    await sleep(8000);
+    try{ const r=await fetch(manifest+'?t='+Date.now(),{cache:'no-store'}); if(r.ok){ clearInterval(tick); return buildReady(manifest, boardName, apps.length); } }catch(e){}
+  }
+  clearInterval(tick); buildError('Timed out waiting for the build. It may still finish — check back shortly.', boardName);
 }
-appsEl.addEventListener('click',e=>{const b=e.target.closest('.app');if(b)openApp(+b.dataset.i);});
-document.getElementById('m-close').addEventListener('click',()=>modal.classList.remove('open'));
-modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')modal.classList.remove('open');});
-renderChips();renderApps();
+function buildReady(manifest, boardName, n){
+  openModal(`<h3>Firmware ready ⚡</h3><div class="sub">${boardName} · ${n} apps</div>
+    <p class="hint">Plug in over USB (Chrome or Edge on desktop) and flash. Your build stays available at this link if you want it later.</p>
+    <div class="mrow" id="flashrow"></div>
+    <p class="hint" style="margin-top:10px"><a href="${manifest}" target="_blank" rel="noopener" style="color:var(--muted)">build manifest ↗</a></p>`);
+  const btn=document.createElement('esp-web-install-button');
+  btn.setAttribute('manifest', manifest);
+  btn.innerHTML='<button slot="activate" class="btn primary">Flash now</button>'+
+    '<span slot="unsupported" class="hint">Use Chrome / Edge on desktop to flash.</span>'+
+    '<span slot="not-allowed" class="hint">Flashing needs a secure (https) page.</span>';
+  const close=document.createElement('button'); close.className='btn'; close.textContent='Done'; close.onclick=closeModal;
+  const row=document.getElementById('flashrow'); row.appendChild(btn); row.appendChild(close);
+}
+function buildError(msg, boardName){
+  openModal(`<h3>Build didn't start</h3><div class="sub">${boardName}</div>
+    <div class="err">${msg}</div>
+    <div class="mrow"><button class="btn primary" id="retry">Try again</button><button class="btn" id="mx">Close</button></div>`);
+  document.getElementById('retry').onclick=()=>{ closeModal(); startBuild(); };
+  document.getElementById('mx').onclick=closeModal;
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+renderChips(); renderApps(); syncTray();
 
 const root=document.documentElement;
 document.getElementById('theme').addEventListener('click',()=>{
@@ -422,6 +452,7 @@ document.getElementById('theme').addEventListener('click',()=>{
   root.setAttribute('data-theme',cur==='dark'?'light':'dark');
 });
 
+/* animated device screen */
 const menu=[['subghz','Sub-GHz'],['nfc','NFC'],['rfid','125 kHz RFID'],['ir','Infrared'],['ibutton','iButton'],['bt','Bluetooth'],['wifi','WiFi'],['usb','Bad USB'],['gpio','GPIO'],['games','Games'],['tools','Apps'],['detect','Defender']];
 const glyph={subghz:'∿',nfc:'≋',rfid:'▤',ir:'☀',ibutton:'⚿',bt:'✶',wifi:'▮',usb:'⇅',gpio:'⊞',games:'✦',tools:'▣',detect:'◈'};
 const listEl=document.getElementById('scr-list'),hintEl=document.getElementById('scr-hint'),battEl=document.getElementById('scr-batt');
