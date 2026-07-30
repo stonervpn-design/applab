@@ -213,7 +213,7 @@
         <div class="stats">
           <div class="stat"><b class="tnum" id="count-apps">39</b><span>apps to choose from</span></div>
           <div class="stat"><b class="tnum">2</b><span>boards supported</span></div>
-          <div class="stat"><b class="tnum">~7 min</b><span>build &amp; flash</span></div>
+          <div class="stat"><b class="tnum" id="flash-count">…</b><span>flashes &amp; downloads</span></div>
         </div>
       </div>
       <div class="device">
@@ -340,6 +340,16 @@ const PREBUILT = {
   m5stick_s3: "https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/manifest.json",
   m5stack_cardputer_adv: "https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/manifest.json",
 };
+
+// Flash/download counter (KV-backed, via the Worker). Best-effort — never blocks UI.
+const COUNTER_URL = 'https://applab-build-proxy.stonervpn.workers.dev/count';
+function bumpCount(){ try{ fetch(COUNTER_URL,{method:'POST',mode:'cors',keepalive:true}); }catch(e){} }
+async function loadCount(){
+  const el=document.getElementById('flash-count'); if(!el) return;
+  try{ const j=await (await fetch(COUNTER_URL,{cache:'no-store'})).json();
+    if(typeof j.count==='number') el.textContent=j.count.toLocaleString();
+  }catch(e){ el.textContent='—'; }
+}
 const BUILD_TIMEOUT_MS = 15 * 60 * 1000;
 
 const I = {
@@ -560,6 +570,9 @@ function buildReady(manifest, boardName, n, prebuilt){
   logsBtn.onclick=()=>{ closeModal(); if(window.openConsole) window.openConsole(); };
   const close=document.createElement('button'); close.className='btn'; close.textContent='Done'; close.onclick=closeModal;
   const row=document.getElementById('flashrow'); row.appendChild(btn); row.appendChild(logsBtn); row.appendChild(close);
+  // Count the flash when the user actually clicks "Flash now" (once per ready screen).
+  const activate=btn.querySelector('button[slot="activate"]');
+  if(activate) activate.addEventListener('click', bumpCount, {once:true});
 }
 function buildError(msg, boardName){
   openModal(`<h3>Build didn't start</h3><div class="sub">${boardName}</div>
@@ -571,6 +584,13 @@ function buildError(msg, boardName){
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 renderChips(); renderApps(); syncTray();
+
+// Live flash/download counter: show the running total, and count SD-file downloads too.
+loadCount();
+(function(){
+  const sd=document.querySelector('#sdfiles a[download]');
+  if(sd) sd.addEventListener('click', bumpCount);
+})();
 
 /* ── show the current firmware build versions so users can see these are fresh ── */
 (async () => {
