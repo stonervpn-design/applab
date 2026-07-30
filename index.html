@@ -188,6 +188,7 @@
       <a href="#catalog">Apps</a>
       <a href="#how">How it works</a>
       <a href="#console">Console</a>
+      <a href="https://nexoria.chat/join/0f30a32e" target="_blank" rel="noopener" style="color:var(--accent)">Community ↗</a>
       <button class="iconbtn" id="theme" title="Toggle theme" aria-label="Toggle theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke-linecap="round"/></svg>
       </button>
@@ -286,8 +287,11 @@
 
 <footer>
   <div class="wrap">
-    <div style="max-width:60ch; line-height:1.5"><strong>applab</strong> — community Flipper-firmware ports for M5Stack ESP32-S3 boards. Not affiliated with Flipper Devices or M5Stack. For authorized security testing, education, and hardware you own.</div>
+    <div style="max-width:60ch; line-height:1.5"><strong>applab</strong> — community Flipper-firmware ports for M5Stack ESP32-S3 boards. Not affiliated with Flipper Devices or M5Stack. For authorized security testing, education, and hardware you own.
+      <br><span id="build-versions" class="mono" style="color:var(--faint); font-size:12px"></span>
+    </div>
     <div class="mono" style="text-align:right; line-height:1.9">
+      📢 <a href="https://nexoria.chat/join/0f30a32e" target="_blank" rel="noopener" style="color:var(--accent); font-weight:700">Official updates — nexoria.chat ↗</a><br>
       <a href="https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/" target="_blank" rel="noopener">StickS3 flasher ↗</a><br>
       <a href="https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/" target="_blank" rel="noopener">Cardputer flasher ↗</a>
     </div>
@@ -460,10 +464,24 @@ document.getElementById('select-all').addEventListener('click',()=>{
 });
 
 /* ── Flash everything: pre-built full bin, no cloud build, no selection needed ── */
+// Pull a fresh manifest + point its bin at a cache-busted absolute URL so "Flash all"
+// always installs the newest image — a cached/old build can never be caught.
+async function flashPrebuilt(board, boardName){
+  let manifest = PREBUILT[board];
+  if(!manifest) return;
+  try{
+    const t = Date.now();
+    const m = await (await fetch(manifest + '?t=' + t, {cache:'no-store'})).json();
+    (m.builds||[]).forEach(b=>(b.parts||[]).forEach(p=>{
+      p.path = new URL(String(p.path).split('?')[0], manifest).href + '?t=' + t;
+    }));
+    manifest = URL.createObjectURL(new Blob([JSON.stringify(m)], {type:'application/json'}));
+  }catch(e){ /* fall back to the plain manifest URL */ }
+  buildReady(manifest, boardName, APPS.length, true);
+}
 document.getElementById('flash-all').addEventListener('click',()=>{
   const board=document.getElementById('full-board').value;
-  const boardName = board==='m5stick_s3' ? 'M5Stick S3' : 'Cardputer ADV';
-  if(PREBUILT[board]) buildReady(PREBUILT[board], boardName, APPS.length, true);
+  flashPrebuilt(board, board==='m5stick_s3' ? 'M5Stick S3' : 'Cardputer ADV');
 });
 
 /* ── build flow ── */
@@ -483,7 +501,7 @@ async function startBuild(){
 
   // Every app selected → flash the ready-made full build, no cloud compile/wait.
   if(apps.length===APPS.length && PREBUILT[board]){
-    return buildReady(PREBUILT[board], boardName, apps.length, true);
+    return flashPrebuilt(board, boardName);
   }
 
   if(PROXY_URL.startsWith('PASTE_')){
@@ -545,6 +563,21 @@ function buildError(msg, boardName){
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 renderChips(); renderApps(); syncTray();
+
+/* ── show the current firmware build versions so users can see these are fresh ── */
+(async () => {
+  const el = document.getElementById('build-versions');
+  if(!el) return;
+  const boards = [
+    ['M5Stick', 'https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/manifest.json'],
+    ['Cardputer', 'https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/manifest.json'],
+  ];
+  const parts = await Promise.all(boards.map(async ([name, url]) => {
+    try { const m = await (await fetch(url + '?t=' + Date.now(), {cache:'no-store'})).json(); return name + ' ' + m.version; }
+    catch(e){ return name + ' —'; }
+  }));
+  el.textContent = 'Current builds — ' + parts.join('  ·  ');
+})();
 
 const root=document.documentElement;
 document.getElementById('theme').addEventListener('click',()=>{
