@@ -231,6 +231,14 @@
   <section id="catalog">
     <div class="sechead"><div class="eyebrow">Choose your apps</div><h2>The app catalog</h2>
       <p>Tick the tools you want. Pick a board and hit build — you'll get a firmware with exactly your selection, ready to flash.</p></div>
+    <div class="fullbuild" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 18px;padding:14px 16px;border:1px solid var(--accent-2);border-radius:12px;background:color-mix(in srgb,var(--accent) 8%, transparent)">
+      <div style="flex:1 1 240px;font-size:14px"><b>Want everything?</b> Flash the full build — every app, already compiled in. No build, no wait.</div>
+      <select id="full-board" aria-label="Board for full build" style="font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--ink)">
+        <option value="m5stack_cardputer_adv">Cardputer ADV</option>
+        <option value="m5stick_s3">M5Stick S3</option>
+      </select>
+      <button class="btn primary" id="flash-all">⚡ Flash all apps</button>
+    </div>
     <div class="controls">
       <label class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
@@ -449,6 +457,13 @@ document.getElementById('select-all').addEventListener('click',()=>{
   const allPicked=view.length>0 && view.every(a=>selected.has(a.id));
   view.forEach(a=>allPicked?selected.delete(a.id):selected.add(a.id));
   syncTray(); renderApps();
+});
+
+/* ── Flash everything: pre-built full bin, no cloud build, no selection needed ── */
+document.getElementById('flash-all').addEventListener('click',()=>{
+  const board=document.getElementById('full-board').value;
+  const boardName = board==='m5stick_s3' ? 'M5Stick S3' : 'Cardputer ADV';
+  if(PREBUILT[board]) buildReady(PREBUILT[board], boardName, APPS.length, true);
 });
 
 /* ── build flow ── */
