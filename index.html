@@ -237,6 +237,10 @@
         <input id="q" type="search" placeholder="Search apps…  (e.g. nfc, subghz, doom)" autocomplete="off" aria-label="Search apps">
       </label>
       <div class="chips" id="chips"></div>
+      <div class="pickall" style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn" id="select-all">Select all</button>
+        <span class="pickall-hint" id="pickall-hint" style="font-size:13px;color:var(--muted)"></span>
+      </div>
     </div>
     <div class="grid-apps" id="apps"></div>
   </section>
@@ -310,6 +314,12 @@
    Until then the Build button explains that the service isn't wired up yet.
    ───────────────────────────────────────────────────────────────────────────── */
 const PROXY_URL = "https://applab-build-proxy.stonervpn.workers.dev";   // Cloudflare Worker (applab-site/proxy)
+// "Select all" (every app) flashes these ready-made full builds directly — the
+// public webflasher bins, all apps compiled in — so there's no cloud-build wait.
+const PREBUILT = {
+  m5stick_s3: "https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/manifest.json",
+  m5stack_cardputer_adv: "https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/manifest.json",
+};
 const BUILD_TIMEOUT_MS = 15 * 60 * 1000;
 
 const I = {
@@ -402,6 +412,7 @@ function renderApps(){
         <div class="cat">${CATMAP[a.c]}</div>
       </div>
     </div>`).join(''):`<div class="empty">No apps match “${q}”. Try “nfc”, “radio” or “game”.</div>`;
+  updateSelectAll();
 }
 function toggle(id){ selected.has(id)?selected.delete(id):selected.add(id); syncTray(); renderApps(); }
 appsEl.addEventListener('click',e=>{
@@ -415,6 +426,30 @@ document.getElementById('q').addEventListener('input',e=>{query=e.target.value;r
 const tray=document.getElementById('tray'), selN=document.getElementById('sel-n');
 function syncTray(){ selN.textContent=selected.size; tray.classList.toggle('show', selected.size>0); }
 document.getElementById('sel-clear').addEventListener('click',()=>{selected.clear();syncTray();renderApps();});
+
+/* ── Select all (context-aware: whatever's in view — a category, a search, or everything) ── */
+function appsInView(){
+  const q=query.trim().toLowerCase();
+  return APPS.filter(a=>(active==='all'||a.c===active)&&(!q||(a.n+' '+a.d+' '+CATMAP[a.c]).toLowerCase().includes(q)));
+}
+function updateSelectAll(){
+  const btn=document.getElementById('select-all'); if(!btn) return;
+  const view=appsInView();
+  const allPicked=view.length>0 && view.every(a=>selected.has(a.id));
+  const scope=active==='all'?'all':'all '+CATMAP[active];
+  btn.textContent=(allPicked?'Deselect ':'Select ')+scope;
+  btn.disabled=view.length===0;
+  const hint=document.getElementById('pickall-hint');
+  if(hint) hint.textContent = (selected.size===APPS.length)
+    ? '✓ every app — flashes the ready-made build instantly, no wait'
+    : (active==='all' && !query.trim() ? 'Pick everything for a ready-made build (no compile wait)' : view.length+' shown');
+}
+document.getElementById('select-all').addEventListener('click',()=>{
+  const view=appsInView();
+  const allPicked=view.length>0 && view.every(a=>selected.has(a.id));
+  view.forEach(a=>allPicked?selected.delete(a.id):selected.add(a.id));
+  syncTray(); renderApps();
+});
 
 /* ── build flow ── */
 const modal=document.getElementById('buildmodal'), sheet=document.getElementById('buildsheet');
@@ -430,6 +465,11 @@ async function startBuild(){
   const apps=[...selected];
   if(!apps.length) return;
   const boardName = board==='m5stick_s3' ? 'M5Stick S3' : 'Cardputer ADV';
+
+  // Every app selected → flash the ready-made full build, no cloud compile/wait.
+  if(apps.length===APPS.length && PREBUILT[board]){
+    return buildReady(PREBUILT[board], boardName, apps.length, true);
+  }
 
   if(PROXY_URL.startsWith('PASTE_')){
     openModal(`<h3>Almost there</h3><div class="sub">Build service not connected yet</div>
@@ -463,11 +503,13 @@ async function startBuild(){
   }
   clearInterval(tick); buildError('Timed out waiting for the build. It may still finish — check back shortly.', boardName);
 }
-function buildReady(manifest, boardName, n){
-  openModal(`<h3>Firmware ready ⚡</h3><div class="sub">${boardName} · ${n} apps</div>
-    <p class="hint">Plug in over USB (Chrome or Edge on desktop) and flash. Your build stays available at this link if you want it later.</p>
+function buildReady(manifest, boardName, n, prebuilt){
+  openModal(`<h3>${prebuilt?'Full firmware — ready now ⚡':'Firmware ready ⚡'}</h3><div class="sub">${boardName} · ${prebuilt?('all '+n+' apps · pre-built'):(n+' apps')}</div>
+    <p class="hint">${prebuilt
+      ?'The complete build with every app already compiled in — no cloud build needed. Plug in over USB (Chrome or Edge on desktop) and flash.'
+      :'Plug in over USB (Chrome or Edge on desktop) and flash. Your build stays available at this link if you want it later.'}</p>
     <div class="mrow" id="flashrow"></div>
-    <p class="hint" style="margin-top:10px"><a href="${manifest}" target="_blank" rel="noopener" style="color:var(--muted)">build manifest ↗</a></p>`);
+    <p class="hint" style="margin-top:10px"><a href="${manifest}" target="_blank" rel="noopener" style="color:var(--muted)">${prebuilt?'firmware manifest ↗':'build manifest ↗'}</a></p>`);
   const btn=document.createElement('esp-web-install-button');
   btn.setAttribute('manifest', manifest);
   btn.innerHTML='<button slot="activate" class="btn primary">Flash now</button>'+
