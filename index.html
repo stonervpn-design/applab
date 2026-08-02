@@ -287,10 +287,13 @@
 
     <div class="sdfiles" id="sdfiles" style="margin-top:22px;padding:16px 18px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);display:flex;align-items:center;gap:16px;flex-wrap:wrap">
       <div style="flex:1 1 320px">
-        <b>Cardputer users — grab the SD card files</b>
-        <div style="color:var(--muted);font-size:14px;margin-top:5px;line-height:1.5">The Cardputer reads its SubGHz KeeLoq keys, NFC dictionaries, and IR remote databases from a <b>microSD</b> (the M5Stick bakes these into flash, so it doesn't need this). Extract this pack to the <b>root of a FAT32 microSD</b> and insert it — you'll get <span class="mono" style="font-size:12px">/subghz&nbsp;/nfc&nbsp;/infrared&nbsp;/Manifest</span>. Without it, SubGHz decoding, NFC lookups and IR remotes won't work.</div>
+        <b>Cardputer &amp; T-Embed users — grab the SD card files</b>
+        <div style="color:var(--muted);font-size:14px;margin-top:5px;line-height:1.5">The Cardputer and the LilyGo T-Embed CC1101+ read their SubGHz KeeLoq keys, NFC dictionaries, and IR remote databases from a <b>microSD</b> (the M5Stick bakes these into flash, so it doesn't need this). Extract the pack for your board to the <b>root of a FAT32 microSD</b> and insert it — you'll get <span class="mono" style="font-size:12px">/subghz&nbsp;/nfc&nbsp;/infrared&nbsp;/Manifest</span>. Without it, SubGHz decoding, NFC lookups and IR remotes won't work.</div>
       </div>
-      <a class="btn primary" href="https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/sd_content.zip" download style="white-space:nowrap">⬇ Download SD files <span style="opacity:.85;font-weight:400">(~212&nbsp;KB)</span></a>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a class="btn primary" href="https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/sd_content.zip" download style="white-space:nowrap">⬇ Cardputer SD files <span style="opacity:.85;font-weight:400">(~212&nbsp;KB)</span></a>
+        <a class="btn primary" href="https://stonervpn-design.github.io/lilygo-t-embed-cc1101-flipper-webflasher/sd_content.zip" download style="white-space:nowrap">⬇ T-Embed SD files <span style="opacity:.85;font-weight:400">(~212&nbsp;KB)</span></a>
+      </div>
     </div>
   </section>
 
@@ -372,8 +375,7 @@ const PROXY_URL = "https://applab-build-proxy.stonervpn.workers.dev";   // Cloud
 const PREBUILT = {
   m5stick_s3: "https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/manifest.json",
   m5stack_cardputer_adv: "https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/manifest.json",
-  // lilygo_t_embed_cc1101 has no ready-made full build yet → "Select all" falls back
-  // to a custom cloud build (handled below via the PREBUILT[board] guard).
+  lilygo_t_embed_cc1101: "https://stonervpn-design.github.io/lilygo-t-embed-cc1101-flipper-webflasher/manifest.json",
 };
 
 // Display names for every supported board (used in build/flash modals).
