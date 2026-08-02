@@ -12,19 +12,34 @@
 //   BUILDS_PAGES   (var)    — "stonervpn-design.github.io/applab-builds"
 //   ALLOWED_ORIGIN (var)    — "https://stonervpn-design.github.io"  (CORS lock)
 
-const BOARDS = new Set(["m5stick_s3", "m5stack_cardputer_adv"]);
+const BOARDS = new Set(["m5stick_s3", "m5stack_cardputer_adv", "lilygo_t_embed_cc1101"]);
 const MAX_APPS_LEN = 2000;
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
     const origin = env.ALLOWED_ORIGIN || "*";
     const cors = {
       "Access-Control-Allow-Origin": origin,
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Vary": "Origin",
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+
+    // Flash/download counter (KV-backed). GET reads it; POST bumps it. Best-effort:
+    // if the KV binding isn't present the count is reported as 0 and never errors.
+    if (url.pathname === "/count") {
+      const key = "flashes";
+      if (!env.COUNTER) return json({ count: 0 }, 200, cors);
+      if (request.method === "POST") {
+        const n = (parseInt(await env.COUNTER.get(key), 10) || 0) + 1;
+        await env.COUNTER.put(key, String(n));
+        return json({ count: n }, 200, cors);
+      }
+      return json({ count: parseInt(await env.COUNTER.get(key), 10) || 0 }, 200, cors);
+    }
+
     if (request.method !== "POST") return json({ error: "Use POST." }, 405, cors);
 
     let body;

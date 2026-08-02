@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>applab — build & flash apps for M5Stack StickS3 & Cardputer ADV</title>
+<title>applab — build & flash apps for M5Stack StickS3, Cardputer ADV & LilyGo T-Embed CC1101</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Pick the apps you want, build a custom firmware, and flash it in your browser — for the M5Stack StickS3 and Cardputer ADV Flipper-firmware ports.">
+<meta name="description" content="Pick the apps you want, build a custom firmware, and flash it in your browser — for the M5Stack StickS3, Cardputer ADV, and LilyGo T-Embed CC1101 Flipper-firmware ports.">
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
 <style>
   :root{
@@ -177,6 +177,31 @@
     .tray .wrap{height:auto; padding-top:12px; padding-bottom:12px}
   }
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; scroll-behavior:auto} }
+
+  /* ── nexoria community CTA: hero banner + sticky button ── */
+  .joinbar{display:flex;align-items:center;gap:13px;justify-content:center;flex-wrap:wrap;
+    padding:11px 18px;text-decoration:none;color:#120C02;
+    background:linear-gradient(90deg,var(--accent),var(--signal));
+    border-bottom:1px solid var(--accent-2);font-size:14.5px;transition:filter .15s}
+  .joinbar:hover{filter:brightness(1.06)}
+  .joinbar .ic{font-size:18px;line-height:1}
+  .joinbar b{font-weight:800}
+  .joinbar .sub{opacity:.82}
+  .joinbar .cta{margin-left:4px;padding:5px 13px;border-radius:999px;background:#120C02;
+    color:var(--accent);font-weight:800;font-size:13px;white-space:nowrap}
+  @media(max-width:600px){ .joinbar .sub{display:none} }
+
+  .joinfab{position:fixed;right:18px;bottom:18px;z-index:80;display:inline-flex;align-items:center;gap:8px;
+    padding:11px 17px;border-radius:999px;text-decoration:none;font-weight:800;font-size:14px;color:#120C02;
+    background:linear-gradient(90deg,var(--accent),var(--signal));
+    box-shadow:0 6px 22px rgba(0,0,0,.35),0 0 0 3px color-mix(in srgb,var(--accent) 24%,transparent);
+    animation:fabpulse 2.6s ease-in-out infinite;transition:transform .15s}
+  .joinfab:hover{transform:translateY(-2px) scale(1.03)}
+  .joinfab .arw{opacity:.7}
+  @keyframes fabpulse{0%,100%{box-shadow:0 6px 22px rgba(0,0,0,.35),0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+    50%{box-shadow:0 8px 26px rgba(0,0,0,.42),0 0 0 8px color-mix(in srgb,var(--accent) 5%,transparent)}}
+  @media(max-width:600px){ .joinfab{right:12px;bottom:12px;padding:10px 14px;font-size:13px} }
+  @media (prefers-reduced-motion:reduce){ .joinfab{animation:none} }
 </style>
 </head>
 <body>
@@ -196,6 +221,12 @@
   </div>
 </header>
 
+<a class="joinbar" href="https://nexoria.chat/join/0f30a32e" target="_blank" rel="noopener">
+  <span class="ic">💬</span>
+  <span><b>Join the nexoria community</b><span class="sub"> — build help, firmware drops &amp; early updates</span></span>
+  <span class="cta">Join now ↗</span>
+</a>
+
 <a id="top"></a>
 <div class="wrap">
   <section class="hero">
@@ -212,7 +243,7 @@
         </div>
         <div class="stats">
           <div class="stat"><b class="tnum" id="count-apps">39</b><span>apps to choose from</span></div>
-          <div class="stat"><b class="tnum">2</b><span>boards supported</span></div>
+          <div class="stat"><b class="tnum">3</b><span>boards supported</span></div>
           <div class="stat"><b class="tnum" id="flash-count">…</b><span>flashes &amp; downloads</span></div>
         </div>
       </div>
@@ -237,6 +268,7 @@
       <select id="full-board" aria-label="Board for full build" style="font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--ink)">
         <option value="m5stack_cardputer_adv">Cardputer ADV</option>
         <option value="m5stick_s3">M5Stick S3</option>
+        <option value="lilygo_t_embed_cc1101">T-Embed CC1101+</option>
       </select>
       <button class="btn primary" id="flash-all">⚡ Flash all apps</button>
     </div>
@@ -313,6 +345,7 @@
     <select id="build-board" aria-label="Board">
       <option value="m5stack_cardputer_adv">Cardputer ADV</option>
       <option value="m5stick_s3">M5Stick S3</option>
+      <option value="lilygo_t_embed_cc1101">T-Embed CC1101+</option>
     </select>
     <button class="linkbtn" id="sel-clear">clear</button>
     <span class="spacer"></span>
@@ -339,6 +372,15 @@ const PROXY_URL = "https://applab-build-proxy.stonervpn.workers.dev";   // Cloud
 const PREBUILT = {
   m5stick_s3: "https://stonervpn-design.github.io/m5stick-s3-flipper-webflasher/manifest.json",
   m5stack_cardputer_adv: "https://stonervpn-design.github.io/cardputer-adv-flipper-webflasher/manifest.json",
+  // lilygo_t_embed_cc1101 has no ready-made full build yet → "Select all" falls back
+  // to a custom cloud build (handled below via the PREBUILT[board] guard).
+};
+
+// Display names for every supported board (used in build/flash modals).
+const BOARD_NAMES = {
+  m5stick_s3: "M5Stick S3",
+  m5stack_cardputer_adv: "Cardputer ADV",
+  lilygo_t_embed_cc1101: "T-Embed CC1101+",
 };
 
 // Flash/download counter (KV-backed, via the Worker). Best-effort — never blocks UI.
@@ -516,7 +558,7 @@ async function startBuild(){
   const board=document.getElementById('build-board').value;
   const apps=[...selected];
   if(!apps.length) return;
-  const boardName = board==='m5stick_s3' ? 'M5Stick S3' : 'Cardputer ADV';
+  const boardName = BOARD_NAMES[board] || board;
 
   // Every app selected → flash the ready-made full build, no cloud compile/wait.
   if(apps.length===APPS.length && PREBUILT[board]){
@@ -705,5 +747,8 @@ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
   });
 })();
 </script>
+<a class="joinfab" href="https://nexoria.chat/join/0f30a32e" target="_blank" rel="noopener" aria-label="Join the nexoria community on nexoria.chat">
+  <span aria-hidden="true">💬</span> Join nexoria <span class="arw" aria-hidden="true">↗</span>
+</a>
 </body>
 </html>
