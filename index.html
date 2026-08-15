@@ -412,7 +412,7 @@ const I = {
 };
 const CATS = [
   {id:'subghz', label:'Sub-GHz'}, {id:'nfc', label:'NFC'}, {id:'rfid', label:'125 kHz RFID'},
-  {id:'ir', label:'Infrared'}, {id:'ibutton', label:'iButton'}, {id:'bt', label:'Bluetooth'},
+  {id:'ir', label:'Infrared'}, {id:'bt', label:'Bluetooth'},
   {id:'wifi', label:'WiFi & 2.4 GHz'}, {id:'usb', label:'USB / HID'}, {id:'gpio', label:'GPIO'},
   {id:'games', label:'Games'}, {id:'tools', label:'Tools & Media'}, {id:'detect', label:'Defense'}
 ];
@@ -420,7 +420,6 @@ const CATMAP = Object.fromEntries(CATS.map(c=>[c.id,c.label]));
 // id = firmware appid (what the build receives); n = display name
 const APPS = [
   {id:'subghz', n:'Sub-GHz', c:'subghz', d:'Capture, analyze and replay 300–928 MHz remotes with the CC1101.'},
-  {id:'subghz_remote', n:'Sub-GHz Remote', c:'subghz', d:'Bind saved signals to a button grid and fire them like a universal remote.'},
   {id:'esubghz_chat', n:'Enhanced Sub-GHz Chat', c:'subghz', d:'Text chat between devices over the sub-GHz radio, with optional encryption.'},
   {id:'lora_monitor', n:'LoRa Monitor', c:'subghz', d:'Watch LoRa traffic and packet metadata on the ISM bands.'},
   {id:'meshtastic_sniffer', n:'Meshtastic Sniffer', c:'subghz', d:'Passively observe Meshtastic mesh packets in range.'},
@@ -429,33 +428,24 @@ const APPS = [
   {id:'nfc_magic', n:'NFC Magic', c:'nfc', d:'Detect and write magic cards — Gen1a, Gen2, Gen4 — to clone a saved dump.'},
   {id:'mifare_fuzzer', n:'Mifare Fuzzer', c:'nfc', d:'Cycle UIDs and payloads against a reader for MIFARE testing.'},
   {id:'nfc_share', n:'NFC Share', c:'nfc', d:'Send and receive files between two M5 Unit NFC devices — or a real Flipper Zero — over 13.56 MHz. Needs the ST25R3916 Unit NFC.'},
-  {id:'lfrfid', n:'125 kHz RFID', c:'rfid', d:'Read, save and emulate low-frequency tags — EM4100, HID Prox, Indala and more.'},
   {id:'wiegand', n:'Wiegand Reader', c:'rfid', d:'Decode raw Wiegand from an access-control reader over GPIO.'},
   {id:'infrared', n:'Infrared', c:'ir', d:'Learn and replay IR remotes; built-in universal database for TVs, ACs and projectors.'},
-  {id:'flipper_xremote', n:'XRemote', c:'ir', d:'Custom IR remote layouts you build and share.'},
-  {id:'ibutton', n:'iButton', c:'ibutton', d:'Read, save and emulate 1-Wire Dallas keys — DS1990 and clones.'},
   {id:'ble_spam', n:'Bluetooth', c:'bt', d:'BLE tools over the on-board radio (NimBLE stack).'},
   {id:'wlan', n:'WiFi', c:'wifi', d:'Scan networks, run recon and the usual 2.4 GHz Wi-Fi assessment tools.'},
-  {id:'esp_now', n:'ESP-Now', c:'wifi', d:'Connectionless ESP-Now messaging and traffic experiments.'},
   {id:'nrf24', n:'NRF 2.4 GHz', c:'wifi', d:'Sniff and interact with nRF24 devices and 2.4 GHz protocols.'},
-  {id:'fz_nrf24_jammer', n:'nRF24 Jammer', c:'wifi', d:'Wideband 2.4 GHz noise for range testing on gear you own.'},
   {id:'lan_attack', n:'LAN Attack', c:'wifi', d:'Network-layer probes and assessment over Wi-Fi.'},
   {id:'bad_usb', n:'Bad USB', c:'usb', d:'Run scripted keystroke payloads (DuckyScript-style) as a USB HID.'},
-  {id:'u2f', n:'U2F', c:'usb', d:'Use the device as a FIDO/U2F hardware security key.'},
   {id:'gpio', n:'GPIO', c:'gpio', d:'Drive and read the header pins; toggle 3V3, PWM and logic levels.'},
   {id:'pin_config', n:'Pin Config', c:'gpio', d:'Map and label the exposed GPIO for your wiring.'},
   {id:'grove_i2c_scan', n:'Grove I2C Scan', c:'gpio', d:'Scan the Grove/QWIIC bus and list every I2C address that answers.'},
   {id:'bus_tools', n:'Bus Tools', c:'gpio', d:'Poke I2C and UART peripherals interactively.'},
   {id:'power_monitor', n:'Power Monitor', c:'gpio', d:'Live voltage and current readout from the PMIC.'},
-  {id:'doom', n:'Doom', c:'games', d:'The 1993 shooter, running on your handheld.'},
-  {id:'wolf3d', n:'Wolf3D', c:'games', d:'Wolfenstein 3D — full engine port.'},
   {id:'asteroids', n:'Asteroids', c:'games', d:'Vector arcade classic.'},
   {id:'blackjack', n:'Blackjack', c:'games', d:'Pocket 21, with split hands.'},
   {id:'flipper_pong', n:'Pong', c:'games', d:'The original two-paddle duel.'},
   {id:'game15', n:'Game 15', c:'games', d:'Slide-tile number puzzle.'},
   {id:'dice_app', n:'Dice D&D', c:'games', d:'Roll any polyhedral set for tabletop night.'},
   {id:'flippergotchi', n:'Flippergotchi', c:'games', d:'A virtual pet that levels up as you use the device.'},
-  {id:'mp3_player', n:'MP3 Player', c:'tools', d:'Play audio off the device storage.'},
   {id:'clock', n:'Clock', c:'tools', d:'Time, date and a stopwatch.'},
   {id:'qrcode', n:'QR Code', c:'tools', d:'Render any text or URL as a scannable QR on-screen.'},
   {id:'pocketlab', n:'PocketLab', c:'tools', d:'A grab-bag of sensor readouts and small utilities.'},
@@ -545,7 +535,7 @@ async function flashPrebuilt(board, boardName){
 }
 document.getElementById('flash-all').addEventListener('click',()=>{
   const board=document.getElementById('full-board').value;
-  flashPrebuilt(board, board==='m5stick_s3' ? 'M5Stick S3' : 'Cardputer ADV');
+  flashPrebuilt(board, BOARD_NAMES[board] || board);
 });
 
 /* ── build flow ── */
