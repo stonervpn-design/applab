@@ -516,20 +516,42 @@ document.getElementById('select-all').addEventListener('click',()=>{
   syncTray(); renderApps();
 });
 
-/* ── Flash everything: pre-built full bin, no cloud build, no selection needed ── */
-// Pull a fresh manifest + point its bin at a cache-busted absolute URL so "Flash all"
-// always installs the newest image — a cached/old build can never be caught.
-async function flashPrebuilt(board, boardName){
-  let manifest = PREBUILT[board];
-  if(!manifest) return;
+/* Resolve a manifest URL into a flash-ready manifest: fetch it fresh, verify it
+   parses (and, for cloud builds, that every .bin part is actually published yet),
+   then rewrite part paths to absolute cache-busted URLs and hand back a blob: URL.
+   This stops esp-web-tools from being handed a manifest whose parts haven't yet
+   propagated across the GitHub Pages CDN — the race that made custom builds
+   "sometimes fail". Returns null when not ready (caller keeps polling) or on any
+   fetch/parse error. */
+async function resolveManifest(manifestUrl, {requireParts=false}={}){
+  const t = Date.now();
+  let m;
   try{
-    const t = Date.now();
-    const m = await (await fetch(manifest + '?t=' + t, {cache:'no-store'})).json();
-    (m.builds||[]).forEach(b=>(b.parts||[]).forEach(p=>{
-      p.path = new URL(String(p.path).split('?')[0], manifest).href + '?t=' + t;
-    }));
-    manifest = URL.createObjectURL(new Blob([JSON.stringify(m)], {type:'application/json'}));
-  }catch(e){ /* fall back to the plain manifest URL */ }
+    const res = await fetch(manifestUrl + '?t=' + t, {cache:'no-store'});
+    if(!res.ok) return null;                       // manifest not published yet
+    m = await res.json();                          // throws if half-written / not JSON
+  }catch(e){ return null; }
+  const parts = (m.builds||[]).flatMap(b=>b.parts||[]);
+  if(!parts.length || parts.some(p=>!p.path)) return null;   // manifest incomplete
+  // Absolutise + cache-bust every part path (mutates m via shared object refs).
+  parts.forEach(p=>{ p.path = new URL(String(p.path).split('?')[0], manifestUrl).href + '?t=' + t; });
+  if(requireParts){
+    // Each image must be fetchable NOW, else esp-web-tools 404s mid-write. 1-byte probe.
+    for(const p of parts){
+      try{ const r = await fetch(p.path, {headers:{Range:'bytes=0-0'}, cache:'no-store'}); if(!r.ok) return null; }
+      catch(e){ return null; }
+    }
+  }
+  return URL.createObjectURL(new Blob([JSON.stringify(m)], {type:'application/json'}));
+}
+
+/* ── Flash everything: pre-built full bin, no cloud build, no selection needed ── */
+// Ready-made bins always exist, so no need to verify parts — just cache-bust so
+// "Flash all" always installs the newest image (a cached/old build can't be caught).
+async function flashPrebuilt(board, boardName){
+  const src = PREBUILT[board];
+  if(!src) return;
+  const manifest = await resolveManifest(src) || src;   // fall back to plain URL on any hiccup
   buildReady(manifest, boardName, APPS.length, true);
 }
 document.getElementById('flash-all').addEventListener('click',()=>{
@@ -589,7 +611,9 @@ async function startBuild(){
   const deadline=Date.now()+BUILD_TIMEOUT_MS;
   while(Date.now()<deadline){
     await sleep(8000);
-    try{ const r=await fetch(manifest+'?t='+Date.now(),{cache:'no-store'}); if(r.ok){ clearInterval(tick); return buildReady(manifest, boardName, apps.length); } }catch(e){}
+    let ready=null;
+    try{ ready=await resolveManifest(manifest, {requireParts:true}); }catch(e){ ready=null; }
+    if(ready){ clearInterval(tick); return buildReady(ready, boardName, apps.length); }
   }
   clearInterval(tick); buildError('Timed out waiting for the build. It may still finish — check back shortly.', boardName);
 }
