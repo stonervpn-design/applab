@@ -598,22 +598,29 @@ async function startBuild(){
   const t0=Date.now();
   const tick=setInterval(()=>{ const s=Math.floor((Date.now()-t0)/1000); const el=document.getElementById('pelapsed'); if(el) el.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} elapsed`; },1000);
 
-  let manifest;
+  let manifest, cached=false;
   try{
     const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({board,apps:apps.join(',')})});
     const j=await r.json();
     if(!j.ok) throw new Error(j.error||('build request failed ('+r.status+')'));
-    manifest=j.manifest;
+    manifest=j.manifest; cached=!!j.cached;
   }catch(err){ clearInterval(tick); return buildError(err.message, boardName); }
 
   clearInterval(tick);                         // pollForBuild runs its own timer + modal
-  return pollForBuild(manifest, boardName, apps.length);
+  if(cached){
+    // This exact selection was already built — resolve + flash right away, no wait.
+    const ps=document.getElementById('pstate'); if(ps) ps.textContent='Found a ready build…';
+    let ready=null;
+    try{ ready=await resolveManifest(manifest, {requireParts:true}); }catch(e){ ready=null; }
+    if(ready) return buildReady(ready, boardName, apps.length, false, board, manifest);
+  }
+  return pollForBuild(manifest, board, boardName, apps.length);
 }
 
 /* Poll a build's manifest until it's flash-ready. Reused by "Keep waiting" so a slow
    build is never reported as failed — the same manifest link is polled again rather
    than kicking off a brand-new cloud build. */
-async function pollForBuild(manifest, boardName, n){
+async function pollForBuild(manifest, board, boardName, n){
   openModal(`<h3>Building your firmware</h3><div class="sub">${boardName} · ${n} apps</div>
     <div class="prog"><div class="spin"></div><div class="ptxt"><b id="pstate">Compiling — grab a coffee…</b><span id="pelapsed">0:00 elapsed</span></div></div>
     <p class="hint">This compiles in the cloud and usually takes 5–12 minutes. Keep this tab open — or close it and reopen the build link below later.</p>
@@ -625,41 +632,59 @@ async function pollForBuild(manifest, boardName, n){
     await sleep(8000);
     let ready=null;
     try{ ready=await resolveManifest(manifest, {requireParts:true}); }catch(e){ ready=null; }
-    if(ready){ clearInterval(tick); return buildReady(ready, boardName, n); }
+    if(ready){ clearInterval(tick); return buildReady(ready, boardName, n, false, board, manifest); }
   }
   clearInterval(tick);
-  buildStillWaiting(manifest, boardName, n);
+  buildStillWaiting(manifest, board, boardName, n);
 }
 
 /* A build that outran the poll window hasn't failed — it's just slow. Offer to keep
    waiting (re-poll the same build) or grab the link and come back once it finishes. */
-function buildStillWaiting(manifest, boardName, n){
+function buildStillWaiting(manifest, board, boardName, n){
   openModal(`<h3>Still building…</h3><div class="sub">${boardName} · ${n} apps</div>
     <p class="hint">This one's taking longer than usual — it's still compiling in the cloud, it hasn't failed. Keep waiting, or close this and open the build link once it's done; the firmware stays at that link.</p>
     <div class="mrow"><button class="btn primary" id="keep">Keep waiting</button><button class="btn" id="mx">Close</button></div>
     <p class="hint" style="margin-top:10px"><a href="${manifest}" target="_blank" rel="noopener" style="color:var(--muted)">build link ↗</a></p>`);
-  document.getElementById('keep').onclick=()=>pollForBuild(manifest, boardName, n);
+  document.getElementById('keep').onclick=()=>pollForBuild(manifest, board, boardName, n);
   document.getElementById('mx').onclick=closeModal;
 }
-function buildReady(manifest, boardName, n, prebuilt){
+function makeFlashButton(manifest, label, primary){
+  const btn=document.createElement('esp-web-install-button');
+  btn.setAttribute('manifest', manifest);
+  btn.innerHTML=`<button slot="activate" class="btn${primary?' primary':''}">${label}</button>`+
+    '<span slot="unsupported" class="hint">Use Chrome / Edge on desktop to flash.</span>'+
+    '<span slot="not-allowed" class="hint">Flashing needs a secure (https) page.</span>';
+  const activate=btn.querySelector('button[slot="activate"]');
+  if(activate) activate.addEventListener('click', bumpCount, {once:true});   // count once per button
+  return btn;
+}
+async function buildReady(manifest, boardName, n, prebuilt, board, baseManifestUrl){
   openModal(`<h3>${prebuilt?'Full firmware — ready now ⚡':'Firmware ready ⚡'}</h3><div class="sub">${boardName} · ${prebuilt?('all '+n+' apps · pre-built'):(n+' apps')}</div>
     <p class="hint">${prebuilt
       ?'The complete build with every app already compiled in — no cloud build needed. Plug in over USB (Chrome or Edge on desktop) and flash.'
       :'Plug in over USB (Chrome or Edge on desktop) and flash. Your build stays available at this link if you want it later.'}</p>
     <div class="mrow" id="flashrow"></div>
+    <p class="hint" id="reflashhint" style="margin-top:8px"></p>
     <p class="hint" style="margin-top:10px"><a href="${manifest}" target="_blank" rel="noopener" style="color:var(--muted)">${prebuilt?'firmware manifest ↗':'build manifest ↗'}</a></p>`);
-  const btn=document.createElement('esp-web-install-button');
-  btn.setAttribute('manifest', manifest);
-  btn.innerHTML='<button slot="activate" class="btn primary">Flash now</button>'+
-    '<span slot="unsupported" class="hint">Use Chrome / Edge on desktop to flash.</span>'+
-    '<span slot="not-allowed" class="hint">Flashing needs a secure (https) page.</span>';
+  const row=document.getElementById('flashrow');
+  const primary=makeFlashButton(manifest, 'Flash now', true);
   const logsBtn=document.createElement('button'); logsBtn.className='btn'; logsBtn.textContent='View device logs';
   logsBtn.onclick=()=>{ closeModal(); if(window.openConsole) window.openConsole(); };
   const close=document.createElement('button'); close.className='btn'; close.textContent='Done'; close.onclick=closeModal;
-  const row=document.getElementById('flashrow'); row.appendChild(btn); row.appendChild(logsBtn); row.appendChild(close);
-  // Count the flash when the user actually clicks "Flash now" (once per ready screen).
-  const activate=btn.querySelector('button[slot="activate"]');
-  if(activate) activate.addEventListener('click', bumpCount, {once:true});
+  row.appendChild(primary); row.appendChild(logsBtn); row.appendChild(close);
+  // M5Stick custom builds bake a 4.4 MB /ext data image into flash. If the device
+  // already has it, offer a firmware-only reflash (no data image, no full erase) that
+  // flashes in about half the time. Resolved separately so a missing image is harmless.
+  if(board==='m5stick_s3' && baseManifestUrl){
+    const appUrl=baseManifestUrl.split('?')[0].replace('manifest.json','manifest-app.json');
+    let appReady=null;
+    try{ appReady=await resolveManifest(appUrl, {requireParts:true}); }catch(e){ appReady=null; }
+    if(appReady){
+      row.insertBefore(makeFlashButton(appReady, 'Firmware only — faster', false), logsBtn);
+      const h=document.getElementById('reflashhint');
+      if(h) h.textContent='“Firmware only” keeps your existing SubGHz/NFC/IR data and skips the full erase — use it when reflashing a device you set up before.';
+    }
+  }
 }
 function buildError(msg, boardName){
   openModal(`<h3>Build didn't start</h3><div class="sub">${boardName}</div>
