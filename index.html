@@ -394,7 +394,7 @@ async function loadCount(){
     if(typeof j.count==='number') el.textContent=j.count.toLocaleString();
   }catch(e){ el.textContent='—'; }
 }
-const BUILD_TIMEOUT_MS = 15 * 60 * 1000;
+const BUILD_TIMEOUT_MS = 20 * 60 * 1000;
 
 const I = {
   subghz:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12c1.5-5 3.5-5 4.5 0S10 17 11 12s2.5-5 3.5 0 2.5 5 3.5 0" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -606,16 +606,40 @@ async function startBuild(){
     manifest=j.manifest;
   }catch(err){ clearInterval(tick); return buildError(err.message, boardName); }
 
-  const setState=t=>{ const el=document.getElementById('pstate'); if(el) el.textContent=t; };
-  setState('Compiling — grab a coffee…');
+  clearInterval(tick);                         // pollForBuild runs its own timer + modal
+  return pollForBuild(manifest, boardName, apps.length);
+}
+
+/* Poll a build's manifest until it's flash-ready. Reused by "Keep waiting" so a slow
+   build is never reported as failed — the same manifest link is polled again rather
+   than kicking off a brand-new cloud build. */
+async function pollForBuild(manifest, boardName, n){
+  openModal(`<h3>Building your firmware</h3><div class="sub">${boardName} · ${n} apps</div>
+    <div class="prog"><div class="spin"></div><div class="ptxt"><b id="pstate">Compiling — grab a coffee…</b><span id="pelapsed">0:00 elapsed</span></div></div>
+    <p class="hint">This compiles in the cloud and usually takes 5–12 minutes. Keep this tab open — or close it and reopen the build link below later.</p>
+    <p class="hint" style="margin-top:8px"><a href="${manifest}" target="_blank" rel="noopener" style="color:var(--muted)">build link ↗</a></p>`);
+  const t0=Date.now();
+  const tick=setInterval(()=>{ const s=Math.floor((Date.now()-t0)/1000); const el=document.getElementById('pelapsed'); if(el) el.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} elapsed`; },1000);
   const deadline=Date.now()+BUILD_TIMEOUT_MS;
   while(Date.now()<deadline){
     await sleep(8000);
     let ready=null;
     try{ ready=await resolveManifest(manifest, {requireParts:true}); }catch(e){ ready=null; }
-    if(ready){ clearInterval(tick); return buildReady(ready, boardName, apps.length); }
+    if(ready){ clearInterval(tick); return buildReady(ready, boardName, n); }
   }
-  clearInterval(tick); buildError('Timed out waiting for the build. It may still finish — check back shortly.', boardName);
+  clearInterval(tick);
+  buildStillWaiting(manifest, boardName, n);
+}
+
+/* A build that outran the poll window hasn't failed — it's just slow. Offer to keep
+   waiting (re-poll the same build) or grab the link and come back once it finishes. */
+function buildStillWaiting(manifest, boardName, n){
+  openModal(`<h3>Still building…</h3><div class="sub">${boardName} · ${n} apps</div>
+    <p class="hint">This one's taking longer than usual — it's still compiling in the cloud, it hasn't failed. Keep waiting, or close this and open the build link once it's done; the firmware stays at that link.</p>
+    <div class="mrow"><button class="btn primary" id="keep">Keep waiting</button><button class="btn" id="mx">Close</button></div>
+    <p class="hint" style="margin-top:10px"><a href="${manifest}" target="_blank" rel="noopener" style="color:var(--muted)">build link ↗</a></p>`);
+  document.getElementById('keep').onclick=()=>pollForBuild(manifest, boardName, n);
+  document.getElementById('mx').onclick=closeModal;
 }
 function buildReady(manifest, boardName, n, prebuilt){
   openModal(`<h3>${prebuilt?'Full firmware — ready now ⚡':'Firmware ready ⚡'}</h3><div class="sub">${boardName} · ${prebuilt?('all '+n+' apps · pre-built'):(n+' apps')}</div>
