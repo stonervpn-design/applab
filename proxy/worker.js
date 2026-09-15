@@ -49,26 +49,43 @@ export default {
     const board = String(body.board || "");
     if (!BOARDS.has(board)) return json({ error: "Unknown board." }, 400, cors);
 
-    // apps: appid-safe chars + commas only; de-dupe; cap length.
+    // apps: appid-safe chars + commas only; de-dupe; SORT (same selection in any
+    // order -> same build); cap length.
     const apps = [...new Set(
       String(body.apps || "")
         .split(",")
         .map((a) => a.replace(/[^a-zA-Z0-9_-]/g, ""))
         .filter(Boolean)
-    )].join(",").slice(0, MAX_APPS_LEN);
+    )].sort().join(",").slice(0, MAX_APPS_LEN);
 
-    // Server-minted id — [a-z0-9-] only, unguessable enough to avoid collisions.
-    const build_id = "b" + crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+    // Deterministic build id: the same (board, apps, firmware source) reuses the same
+    // output path, so a repeat request is served from the existing build with no
+    // recompile. The source's latest commit is folded in, so a firmware update
+    // invalidates the cache. If the source version can't be read, fall back to a
+    // random id (correct, just uncached).
+    const srcVer = await sourceVersion(env);
+    let build_id, deterministic = false;
+    if (srcVer) {
+      build_id = "c" + (await sha256hex(`${board}|${apps}|${srcVer}`)).slice(0, 20);
+      deterministic = true;
+    } else {
+      build_id = "b" + crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+    }
+    const manifestUrl = `https://${env.BUILDS_PAGES}/builds/${build_id}/manifest.json`;
+
+    // Already built for this exact selection + source? Serve it, skip the build.
+    if (deterministic) {
+      try {
+        const head = await fetch(`${manifestUrl}?t=${Date.now()}`, { cf: { cacheTtl: 0 } });
+        if (head.ok) {
+          return json({ ok: true, build_id, manifest: manifestUrl, cached: true }, 200, cors);
+        }
+      } catch (e) { /* fall through and build */ }
+    }
 
     const gh = await fetch(`https://api.github.com/repos/${env.SOURCE_REPO}/dispatches`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${env.GH_TOKEN}`,
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "applab-proxy",
-        "Content-Type": "application/json",
-      },
+      headers: { ...ghHeaders(env), "Content-Type": "application/json" },
       body: JSON.stringify({
         event_type: "custom-build",
         client_payload: { board, apps, build_id },
@@ -80,12 +97,8 @@ export default {
       return json({ error: "Couldn't start the build.", status: gh.status, detail }, 502, cors);
     }
 
-    // 204 No Content on success. Hand back the id + where the result will appear.
-    return json({
-      ok: true,
-      build_id,
-      manifest: `https://${env.BUILDS_PAGES}/builds/${build_id}/manifest.json`,
-    }, 200, cors);
+    // Build dispatched. Hand back the id + where the result will appear.
+    return json({ ok: true, build_id, manifest: manifestUrl, cached: false }, 200, cors);
   },
 };
 
@@ -94,4 +107,35 @@ function json(obj, status, cors) {
     status,
     headers: { "Content-Type": "application/json", ...cors },
   });
+}
+
+function ghHeaders(env) {
+  return {
+    "Authorization": `Bearer ${env.GH_TOKEN}`,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "applab-proxy",
+  };
+}
+
+async function sha256hex(s) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sourceVersion(env) {
+  // Latest commit sha (short) of the firmware source's default branch, used as the
+  // cache-busting part of the deterministic build id. Best-effort: null on any error.
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/${env.SOURCE_REPO}/git/refs/heads/main`,
+      { headers: ghHeaders(env) }
+    );
+    if (!r.ok) return null;
+    const j = await r.json();
+    const sha = j && j.object && j.object.sha ? j.object.sha : "";
+    return sha.slice(0, 12) || null;
+  } catch (e) {
+    return null;
+  }
 }
