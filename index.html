@@ -270,6 +270,10 @@
         <option value="m5stick_s3">M5Stick S3</option>
         <option value="lilygo_t_embed_cc1101">T-Embed CC1101+</option>
       </select>
+      <select id="fw-flavor-full" aria-label="Firmware flavor for full build" title="Firmware flavor" style="font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--ink)">
+        <option value="unleashed">Unleashed</option>
+        <option value="momentum">Momentum</option>
+      </select>
       <button class="btn primary" id="flash-all">⚡ Flash all apps</button>
     </div>
     <div class="controls">
@@ -349,6 +353,10 @@
       <option value="m5stack_cardputer_adv">Cardputer ADV</option>
       <option value="m5stick_s3">M5Stick S3</option>
       <option value="lilygo_t_embed_cc1101">T-Embed CC1101+</option>
+    </select>
+    <select id="fw-flavor" aria-label="Firmware flavor" title="Firmware flavor">
+      <option value="unleashed">Unleashed</option>
+      <option value="momentum">Momentum</option>
     </select>
     <button class="linkbtn" id="sel-clear">clear</button>
     <span class="spacer"></span>
@@ -556,7 +564,11 @@ async function flashPrebuilt(board, boardName){
 }
 document.getElementById('flash-all').addEventListener('click',()=>{
   const board=document.getElementById('full-board').value;
-  flashPrebuilt(board, BOARD_NAMES[board] || board);
+  const flavor=document.getElementById('fw-flavor-full').value;
+  const boardName=BOARD_NAMES[board] || board;
+  // Momentum has no prebuilt full image — cloud-build the full Momentum app set.
+  if(flavor==='momentum') return requestBuild(board, APPS.map(a=>a.id), boardName, 'momentum');
+  flashPrebuilt(board, boardName);
 });
 
 /* ── build flow ── */
@@ -570,6 +582,7 @@ document.getElementById('do-build').addEventListener('click', startBuild);
 
 async function startBuild(){
   const board=document.getElementById('build-board').value;
+  const flavor=document.getElementById('fw-flavor').value;
   const apps=[...selected];
   if(!apps.length) return;
   const boardName = BOARD_NAMES[board] || board;
@@ -579,10 +592,16 @@ async function startBuild(){
   const CUSTOM_ONLY = new Set(['proto_pirate']);
   const needsCustom = apps.some(a=>CUSTOM_ONLY.has(a));
   // Every app selected → flash the ready-made full build, no cloud compile/wait.
-  if(apps.length===APPS.length && PREBUILT[board] && !needsCustom){
+  // Unleashed only: Momentum has no prebuilt image, so it always cloud-builds.
+  if(flavor==='unleashed' && apps.length===APPS.length && PREBUILT[board] && !needsCustom){
     return flashPrebuilt(board, boardName);
   }
+  return requestBuild(board, apps, boardName, flavor);
+}
 
+// POST the build request to the Worker and drive the progress/poll UI. Shared by the
+// app-picker (startBuild) and by "Flash all" when the Momentum flavor is selected.
+async function requestBuild(board, apps, boardName, flavor){
   if(PROXY_URL.startsWith('PASTE_')){
     openModal(`<h3>Almost there</h3><div class="sub">Build service not connected yet</div>
       <p class="hint">The build endpoint isn't wired up. Deploy the Cloudflare Worker in <code>proxy/</code>,
@@ -600,7 +619,7 @@ async function startBuild(){
 
   let manifest, cached=false;
   try{
-    const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({board,apps:apps.join(',')})});
+    const r=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({board,apps:apps.join(','),flavor})});
     const j=await r.json();
     if(!j.ok) throw new Error(j.error||('build request failed ('+r.status+')'));
     manifest=j.manifest; cached=!!j.cached;

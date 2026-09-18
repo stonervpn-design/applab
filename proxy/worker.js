@@ -13,6 +13,10 @@
 //   ALLOWED_ORIGIN (var)    — "https://stonervpn-design.github.io"  (CORS lock)
 
 const BOARDS = new Set(["m5stick_s3", "m5stack_cardputer_adv", "lilygo_t_embed_cc1101"]);
+// Firmware flavor -> branch of SOURCE_REPO the build Action checks out.
+// "unleashed" (default) = the Unleashed-based tree on main; "momentum" = the Momentum
+// tree on the `momentum` branch. The cache-busting source version is read per flavor.
+const FLAVORS = { unleashed: "main", momentum: "momentum" };
 const MAX_APPS_LEN = 2000;
 
 export default {
@@ -49,6 +53,12 @@ export default {
     const board = String(body.board || "");
     if (!BOARDS.has(board)) return json({ error: "Unknown board." }, 400, cors);
 
+    // flavor: which firmware source to build. Defaults to the Unleashed tree.
+    const flavor = String(body.flavor || "unleashed");
+    if (!Object.prototype.hasOwnProperty.call(FLAVORS, flavor)) {
+      return json({ error: "Unknown flavor." }, 400, cors);
+    }
+
     // apps: appid-safe chars + commas only; de-dupe; SORT (same selection in any
     // order -> same build); cap length.
     const apps = [...new Set(
@@ -63,10 +73,15 @@ export default {
     // recompile. The source's latest commit is folded in, so a firmware update
     // invalidates the cache. If the source version can't be read, fall back to a
     // random id (correct, just uncached).
-    const srcVer = await sourceVersion(env);
+    const srcVer = await sourceVersion(env, FLAVORS[flavor]);
     let build_id, deterministic = false;
     if (srcVer) {
-      build_id = "c" + (await sha256hex(`${board}|${apps}|${srcVer}`)).slice(0, 20);
+      // Keep unleashed ids byte-identical to the pre-flavor scheme (existing cached
+      // builds still hit); momentum folds the flavor in for a distinct namespace.
+      const idInput = flavor === "unleashed"
+        ? `${board}|${apps}|${srcVer}`
+        : `${board}|${apps}|${flavor}|${srcVer}`;
+      build_id = "c" + (await sha256hex(idInput)).slice(0, 20);
       deterministic = true;
     } else {
       build_id = "b" + crypto.randomUUID().replace(/-/g, "").slice(0, 20);
@@ -88,7 +103,7 @@ export default {
       headers: { ...ghHeaders(env), "Content-Type": "application/json" },
       body: JSON.stringify({
         event_type: "custom-build",
-        client_payload: { board, apps, build_id },
+        client_payload: { board, apps, build_id, flavor },
       }),
     });
 
@@ -123,12 +138,12 @@ async function sha256hex(s) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function sourceVersion(env) {
-  // Latest commit sha (short) of the firmware source's default branch, used as the
-  // cache-busting part of the deterministic build id. Best-effort: null on any error.
+async function sourceVersion(env, ref) {
+  // Latest commit sha (short) of the firmware source branch for this flavor, used as
+  // the cache-busting part of the deterministic build id. Best-effort: null on error.
   try {
     const r = await fetch(
-      `https://api.github.com/repos/${env.SOURCE_REPO}/git/refs/heads/main`,
+      `https://api.github.com/repos/${env.SOURCE_REPO}/git/refs/heads/${ref || "main"}`,
       { headers: ghHeaders(env) }
     );
     if (!r.ok) return null;
