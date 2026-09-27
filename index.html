@@ -213,6 +213,7 @@
       <a href="#catalog">Apps</a>
       <a href="#how">How it works</a>
       <a href="#console">Console</a>
+      <a href="#support">Support</a>
       <a href="https://nexoria.chat/join/0f30a32e" target="_blank" rel="noopener" style="color:var(--accent)">Community ↗</a>
       <button class="iconbtn" id="theme" title="Toggle theme" aria-label="Toggle theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke-linecap="round"/></svg>
@@ -338,6 +339,22 @@
       </div>
       <pre class="term" id="cterm" aria-live="polite" aria-label="Device serial output"></pre>
       <div class="console-note" id="cnote" hidden></div>
+    </div>
+  </section>
+
+  <section id="support">
+    <div class="sechead"><div class="eyebrow">Support</div><h2>Buy me a coffee</h2>
+      <p>applab is free and community-built. If it saved you time, a small Bitcoin tip helps keep the builds running and new boards coming. Thank you.</p></div>
+    <div class="sdfiles" style="padding:16px 18px;border:1px solid var(--accent-2);border-radius:12px;background:color-mix(in srgb,var(--accent) 8%, transparent);display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex:1 1 320px">
+        <b>☕ Tip in Bitcoin (BTC)</b>
+        <div style="color:var(--muted);font-size:14px;margin-top:5px;line-height:1.5">Send any amount to this on-chain BTC address:</div>
+        <code id="btc-addr" class="mono" style="display:inline-block;margin-top:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);word-break:break-all;font-size:13px;user-select:all">bc1qpdudrfpfzl7yu5xsylkpjrhsmgefkxr8nzh2rp</code>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn primary" id="btc-copy" style="white-space:nowrap">Copy address</button>
+        <a class="btn" href="bitcoin:bc1qpdudrfpfzl7yu5xsylkpjrhsmgefkxr8nzh2rp" style="white-space:nowrap;text-align:center">Open in wallet</a>
+      </div>
     </div>
   </section>
 </div>
@@ -753,6 +770,25 @@ document.getElementById('theme').addEventListener('click',()=>{
   const cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
   root.setAttribute('data-theme',cur==='dark'?'light':'dark');
 });
+
+/* Buy me a coffee: copy the BTC address to the clipboard (with fallback). */
+(function(){
+  const btn=document.getElementById('btc-copy'), addrEl=document.getElementById('btc-addr');
+  if(!btn||!addrEl) return;
+  btn.addEventListener('click', async ()=>{
+    const addr=addrEl.textContent.trim();
+    let ok=false;
+    try{ await navigator.clipboard.writeText(addr); ok=true; }
+    catch(e){
+      try{ const r=document.createRange(); r.selectNodeContents(addrEl);
+        const s=getSelection(); s.removeAllRanges(); s.addRange(r);
+        ok=document.execCommand('copy'); s.removeAllRanges(); }catch(_){}
+    }
+    const old=btn.textContent;
+    btn.textContent = ok ? 'Copied!' : 'Press Ctrl+C';
+    setTimeout(()=>{ btn.textContent=old; }, 1600);
+  });
+})();
 
 /* animated device screen */
 const menu=[['subghz','Sub-GHz'],['nfc','NFC'],['rfid','125 kHz RFID'],['ir','Infrared'],['ibutton','iButton'],['bt','Bluetooth'],['wifi','WiFi'],['usb','Bad USB'],['gpio','GPIO'],['games','Games'],['tools','Apps'],['detect','Defender']];
