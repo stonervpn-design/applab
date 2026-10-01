@@ -458,7 +458,9 @@ const APPS = [
   {id:'esubghz_chat', n:'Enhanced Sub-GHz Chat', c:'subghz', d:'Text chat between devices over the sub-GHz radio, with optional encryption.'},
   {id:'lora_monitor', n:'LoRa Monitor', c:'subghz', d:'Watch LoRa traffic and packet metadata on the ISM bands.'},
   {id:'meshtastic_sniffer', n:'Meshtastic Sniffer', c:'subghz', d:'Passively observe Meshtastic mesh packets in range.'},
-  {id:'proto_pirate', n:'ProtoPirate', c:'subghz', d:'Decode car key-fob remotes — VAG, Ford, Honda, Kia, PSA and more RKE protocols over Sub-GHz. Compiled on demand, so picking it triggers a custom cloud build.'},
+  {id:'proto_pirate', n:'ProtoPirate', c:'subghz', d:'Community ProtoPirate (github.com/RocketGod-git/ProtoPirate) — decode car key-fob RKE remotes over Sub-GHz. Compiled on demand, so picking it triggers a custom cloud build.'},
+  {id:'subghz_debruijn', n:'De Bruijn BF', c:'subghz', d:'Open fixed-code gates and garages fast — one continuous OOK sweep emits every possible code (Princeton/CAME/NICE/Holtek).'},
+  {id:'subghz_rollback', n:'RollBack', c:'subghz', d:'Capture a few consecutive fob presses, then replay the sequence to resync a rolling-code receiver (RollBack / Rolling-PWN class). No decryption.'},
   {id:'nfc', n:'NFC', c:'nfc', d:'Read, save and emulate 13.56 MHz cards. 40 card parsers and full EMV decode with transaction history.'},
   {id:'nfc_magic', n:'NFC Magic', c:'nfc', d:'Detect and write magic cards — Gen1a, Gen2, Gen4 — to clone a saved dump.'},
   {id:'mifare_fuzzer', n:'Mifare Fuzzer', c:'nfc', d:'Cycle UIDs and payloads against a reader for MIFARE testing.'},
@@ -615,9 +617,11 @@ async function startBuild(){
   if(!apps.length) return;
   const boardName = BOARD_NAMES[board] || board;
 
-  // Apps that aren't baked into the ready-made full bin — selecting one forces a
-  // cloud custom-build so it's actually compiled in (proto_pirate is built on demand).
-  const CUSTOM_ONLY = new Set(['proto_pirate']);
+  // Apps not baked into the ready-made full bin — selecting one forces a cloud
+  // custom-build so it's actually compiled in. proto_pirate is always built on demand;
+  // De Bruijn BF + RollBack were added after the current prebuilt full image (drop them
+  // here once that image is regenerated).
+  const CUSTOM_ONLY = new Set(['proto_pirate','subghz_debruijn','subghz_rollback']);
   const needsCustom = apps.some(a=>CUSTOM_ONLY.has(a));
   // Every app selected → flash the ready-made full build, no cloud compile/wait.
   // Unleashed only: Momentum has no prebuilt image, so it always cloud-builds.
