@@ -466,6 +466,7 @@ const APPS = [
   {id:'mifare_fuzzer', n:'Mifare Fuzzer', c:'nfc', d:'Cycle UIDs and payloads against a reader for MIFARE testing.'},
   {id:'nfc_share', n:'NFC Share', c:'nfc', d:'Send and receive files between two M5 Unit NFC devices — or a real Flipper Zero — over 13.56 MHz. Needs the ST25R3916 Unit NFC.'},
   {id:'metroflip', n:'Metroflip', c:'nfc', d:'Read public-transport cards from around the world (Opal, Clipper, Troika, Calypso, myki, ITSO and ~20 more). Community app (github.com/ClementPrimot/Metroflip). Compiled on demand, so picking it triggers a custom cloud build.'},
+  {id:'nfc_maker', n:'NFC Maker', c:'nfc', d:'Create NFC (.nfc) files with NDEF data — links, WiFi join, contacts, Bluetooth, email, phone, text — then emulate them from the NFC app. Community app by @Willy-JL. Compiled on demand.'},
   {id:'wiegand', n:'Wiegand Reader', c:'rfid', d:'Decode raw Wiegand from an access-control reader over GPIO.'},
   {id:'infrared', n:'Infrared', c:'ir', d:'Learn and replay IR remotes; built-in universal database for TVs, ACs and projectors.'},
   {id:'ble_spam', n:'BLE Toolkit', c:'bt', d:'BLE Spam (Apple, Google Fast Pair, Microsoft Swift Pair, Samsung, Xiaomi), a BLE Walk scanner with GATT inspection, a Tracker / Bug-Sweep counter-surveillance mode that flags AirTags and SmartTags, and BLE Clone — over the on-board radio (NimBLE).'},
@@ -622,7 +623,7 @@ async function startBuild(){
   // custom-build so it's actually compiled in. proto_pirate is always built on demand;
   // De Bruijn BF + RollBack were added after the current prebuilt full image (drop them
   // here once that image is regenerated).
-  const CUSTOM_ONLY = new Set(['proto_pirate','subghz_debruijn','subghz_rollback','metroflip']);
+  const CUSTOM_ONLY = new Set(['proto_pirate','subghz_debruijn','subghz_rollback','metroflip','nfc_maker']);
   const needsCustom = apps.some(a=>CUSTOM_ONLY.has(a));
   // Every app selected → flash the ready-made full build, no cloud compile/wait.
   // Unleashed only: Momentum has no prebuilt image, so it always cloud-builds.
